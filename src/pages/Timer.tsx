@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LiquidGlass from 'liquid-glass-react';
 import { CountdownRing } from '../components/CountdownRing';
 import { playAlarm } from '../utils/audio';
 import type { CookingConfig, Stage } from '../types';
@@ -80,18 +81,25 @@ export function Timer() {
 
   return (
     <div style={s.page}>
-      <button
-        className="glass-pill"
-        style={s.exitBtn}
-        onClick={() => { if (timerRef.current) clearInterval(timerRef.current); nav('/'); }}
-        aria-label="退出"
-      >
-        ✕
-      </button>
+      {/* Exit pill */}
+      <div style={s.exitWrap}>
+        <LiquidGlass
+          displacementScale={35}
+          blurAmount={0.06}
+          saturation={140}
+          aberrationIntensity={1}
+          elasticity={0.3}
+          cornerRadius={17}
+          padding="8px 12px"
+          onClick={() => { if (timerRef.current) clearInterval(timerRef.current); nav('/'); }}
+          style={{ cursor: 'pointer' }}
+        >
+          <span style={s.exitText}>✕</span>
+        </LiquidGlass>
+      </div>
 
       <div style={{ flex: 0.8 }} />
 
-      {/* Stage label */}
       <div style={s.stageInfo}>
         <span style={s.stageIcon}>{cur && ICONS[cur.type]}</span>
         <h2 style={s.stageName}>{cur?.label}</h2>
@@ -102,7 +110,6 @@ export function Timer() {
 
       <div style={{ flex: 1 }} />
 
-      {/* Ring */}
       <div style={s.ringWrap}>
         <CountdownRing progress={progress}>
           <span style={s.timeText}>{fmtTime(remaining)}</span>
@@ -113,26 +120,46 @@ export function Timer() {
       <div style={{ flex: 1 }} />
 
       {/* Stage dots */}
-      <div className="glass-pill" style={s.dotsPill}>
-        {stages.map((_, i) => (
-          <div key={i} style={{
-            width: 6, height: 6, borderRadius: 3,
-            background: i < stageIdx
-              ? 'rgba(255, 149, 0, 0.5)'
-              : i === stageIdx
-                ? '#FF9500'
-                : 'rgba(235, 235, 245, 0.2)',
-            transition: 'background 400ms',
-          }} />
-        ))}
-      </div>
+      <LiquidGlass
+        displacementScale={30}
+        blurAmount={0.05}
+        saturation={140}
+        aberrationIntensity={0.8}
+        elasticity={0}
+        cornerRadius={999}
+        padding="8px 14px"
+      >
+        <div style={s.dots}>
+          {stages.map((_, i) => (
+            <div key={i} style={{
+              width: 6, height: 6, borderRadius: 3,
+              background: i < stageIdx
+                ? 'rgba(255, 149, 0, 0.5)'
+                : i === stageIdx
+                  ? '#FF9500'
+                  : 'rgba(235, 235, 245, 0.2)',
+              transition: 'background 400ms',
+            }} />
+          ))}
+        </div>
+      </LiquidGlass>
 
       <div style={{ height: 24 }} />
 
-      <button className="glass-pill" style={s.skipBtn}
-        onClick={() => advanceTo(stageIdx + 1, stages)}>
-        跳过此阶段
-      </button>
+      {/* Skip pill */}
+      <LiquidGlass
+        displacementScale={40}
+        blurAmount={0.06}
+        saturation={140}
+        aberrationIntensity={1}
+        elasticity={0.25}
+        cornerRadius={999}
+        padding="12px 28px"
+        onClick={() => advanceTo(stageIdx + 1, stages)}
+        style={{ cursor: 'pointer' }}
+      >
+        <span style={s.skipText}>跳过此阶段</span>
+      </LiquidGlass>
 
       <div style={{ height: 'calc(env(safe-area-inset-bottom) + 28px)' }} />
     </div>
@@ -151,16 +178,12 @@ const s: Record<string, React.CSSProperties> = {
     paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
     position: 'relative',
   },
-  exitBtn: {
+  exitWrap: {
     position: 'absolute',
     top: 'calc(env(safe-area-inset-top) + 18px)',
     right: 20,
-    width: 34, height: 34,
-    border: 'none',
-    color: 'rgba(235, 235, 245, 0.7)',
-    fontSize: 13, fontWeight: 400,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
+  exitText: { color: 'rgba(235, 235, 245, 0.7)', fontSize: 14, fontWeight: 400, lineHeight: 1 },
   stageInfo: { textAlign: 'center' },
   stageIcon: { fontSize: 32, lineHeight: 1 },
   stageName: {
@@ -181,17 +204,8 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 13, color: 'rgba(235, 235, 245, 0.45)',
     marginTop: 6, fontWeight: 400,
   },
-  dotsPill: {
-    display: 'flex', gap: 7, alignItems: 'center',
-    padding: '8px 14px',
-  },
-  skipBtn: {
-    width: 'auto', minWidth: 160,
-    padding: '12px 28px',
-    border: 'none',
-    color: 'rgba(235, 235, 245, 0.7)',
-    fontSize: 14, fontWeight: 500,
-  },
+  dots: { display: 'flex', gap: 7, alignItems: 'center' },
+  skipText: { color: 'rgba(235, 235, 245, 0.75)', fontSize: 14, fontWeight: 500 },
   donePage: {
     minHeight: '100dvh',
     display: 'flex', flexDirection: 'column',

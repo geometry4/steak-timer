@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LiquidGlass from 'liquid-glass-react';
 import { CountdownRing } from '../components/CountdownRing';
 import { playAlarm } from '../utils/audio';
 const ICONS = {
@@ -66,16 +67,16 @@ export function Timer() {
     if (done) {
         return (_jsxs("div", { style: s.donePage, children: [_jsxs("div", { style: s.doneContent, children: [_jsx("span", { style: { fontSize: 80, lineHeight: 1, marginBottom: 16 }, children: "\uD83C\uDF89" }), _jsx("h2", { style: s.doneTitle, children: "\u9192\u8089\u5B8C\u6210" }), _jsx("p", { style: s.doneSub, children: "\u8D81\u70ED\u4EAB\u7528" })] }), _jsx("button", { className: "btn-primary", onClick: () => nav('/'), children: "\u518D\u6765\u4E00\u5757" })] }));
     }
-    return (_jsxs("div", { style: s.page, children: [_jsx("button", { className: "glass-pill", style: s.exitBtn, onClick: () => { if (timerRef.current)
-                    clearInterval(timerRef.current); nav('/'); }, "aria-label": "\u9000\u51FA", children: "\u2715" }), _jsx("div", { style: { flex: 0.8 } }), _jsxs("div", { style: s.stageInfo, children: [_jsx("span", { style: s.stageIcon, children: cur && ICONS[cur.type] }), _jsx("h2", { style: s.stageName, children: cur?.label }), _jsx("p", { style: s.nextLabel, children: next ? `下一步 · ${next.label}` : '最后一步' })] }), _jsx("div", { style: { flex: 1 } }), _jsx("div", { style: s.ringWrap, children: _jsxs(CountdownRing, { progress: progress, children: [_jsx("span", { style: s.timeText, children: fmtTime(remaining) }), _jsx("span", { style: s.remainLabel, children: "\u5269\u4F59" })] }) }), _jsx("div", { style: { flex: 1 } }), _jsx("div", { className: "glass-pill", style: s.dotsPill, children: stages.map((_, i) => (_jsx("div", { style: {
-                        width: 6, height: 6, borderRadius: 3,
-                        background: i < stageIdx
-                            ? 'rgba(255, 149, 0, 0.5)'
-                            : i === stageIdx
-                                ? '#FF9500'
-                                : 'rgba(235, 235, 245, 0.2)',
-                        transition: 'background 400ms',
-                    } }, i))) }), _jsx("div", { style: { height: 24 } }), _jsx("button", { className: "glass-pill", style: s.skipBtn, onClick: () => advanceTo(stageIdx + 1, stages), children: "\u8DF3\u8FC7\u6B64\u9636\u6BB5" }), _jsx("div", { style: { height: 'calc(env(safe-area-inset-bottom) + 28px)' } })] }));
+    return (_jsxs("div", { style: s.page, children: [_jsx("div", { style: s.exitWrap, children: _jsx(LiquidGlass, { displacementScale: 35, blurAmount: 0.06, saturation: 140, aberrationIntensity: 1, elasticity: 0.3, cornerRadius: 17, padding: "8px 12px", onClick: () => { if (timerRef.current)
+                        clearInterval(timerRef.current); nav('/'); }, style: { cursor: 'pointer' }, children: _jsx("span", { style: s.exitText, children: "\u2715" }) }) }), _jsx("div", { style: { flex: 0.8 } }), _jsxs("div", { style: s.stageInfo, children: [_jsx("span", { style: s.stageIcon, children: cur && ICONS[cur.type] }), _jsx("h2", { style: s.stageName, children: cur?.label }), _jsx("p", { style: s.nextLabel, children: next ? `下一步 · ${next.label}` : '最后一步' })] }), _jsx("div", { style: { flex: 1 } }), _jsx("div", { style: s.ringWrap, children: _jsxs(CountdownRing, { progress: progress, children: [_jsx("span", { style: s.timeText, children: fmtTime(remaining) }), _jsx("span", { style: s.remainLabel, children: "\u5269\u4F59" })] }) }), _jsx("div", { style: { flex: 1 } }), _jsx(LiquidGlass, { displacementScale: 30, blurAmount: 0.05, saturation: 140, aberrationIntensity: 0.8, elasticity: 0, cornerRadius: 999, padding: "8px 14px", children: _jsx("div", { style: s.dots, children: stages.map((_, i) => (_jsx("div", { style: {
+                            width: 6, height: 6, borderRadius: 3,
+                            background: i < stageIdx
+                                ? 'rgba(255, 149, 0, 0.5)'
+                                : i === stageIdx
+                                    ? '#FF9500'
+                                    : 'rgba(235, 235, 245, 0.2)',
+                            transition: 'background 400ms',
+                        } }, i))) }) }), _jsx("div", { style: { height: 24 } }), _jsx(LiquidGlass, { displacementScale: 40, blurAmount: 0.06, saturation: 140, aberrationIntensity: 1, elasticity: 0.25, cornerRadius: 999, padding: "12px 28px", onClick: () => advanceTo(stageIdx + 1, stages), style: { cursor: 'pointer' }, children: _jsx("span", { style: s.skipText, children: "\u8DF3\u8FC7\u6B64\u9636\u6BB5" }) }), _jsx("div", { style: { height: 'calc(env(safe-area-inset-bottom) + 28px)' } })] }));
 }
 function fmtTime(sec) {
     return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
@@ -88,16 +89,12 @@ const s = {
         paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
         position: 'relative',
     },
-    exitBtn: {
+    exitWrap: {
         position: 'absolute',
         top: 'calc(env(safe-area-inset-top) + 18px)',
         right: 20,
-        width: 34, height: 34,
-        border: 'none',
-        color: 'rgba(235, 235, 245, 0.7)',
-        fontSize: 13, fontWeight: 400,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
     },
+    exitText: { color: 'rgba(235, 235, 245, 0.7)', fontSize: 14, fontWeight: 400, lineHeight: 1 },
     stageInfo: { textAlign: 'center' },
     stageIcon: { fontSize: 32, lineHeight: 1 },
     stageName: {
@@ -118,17 +115,8 @@ const s = {
         fontSize: 13, color: 'rgba(235, 235, 245, 0.45)',
         marginTop: 6, fontWeight: 400,
     },
-    dotsPill: {
-        display: 'flex', gap: 7, alignItems: 'center',
-        padding: '8px 14px',
-    },
-    skipBtn: {
-        width: 'auto', minWidth: 160,
-        padding: '12px 28px',
-        border: 'none',
-        color: 'rgba(235, 235, 245, 0.7)',
-        fontSize: 14, fontWeight: 500,
-    },
+    dots: { display: 'flex', gap: 7, alignItems: 'center' },
+    skipText: { color: 'rgba(235, 235, 245, 0.75)', fontSize: 14, fontWeight: 500 },
     donePage: {
         minHeight: '100dvh',
         display: 'flex', flexDirection: 'column',

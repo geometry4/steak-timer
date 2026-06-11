@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import LiquidGlass from 'liquid-glass-react';
 import { CUTS } from '../data/presets';
 
 export function Home() {
@@ -6,25 +7,32 @@ export function Home() {
 
   return (
     <div style={s.page}>
-      {/* Quiet header — no glass, just type */}
       <header style={s.header}>
         <h1 style={s.title}>煎牛排</h1>
         <p style={s.subtitle}>选择部位开始</p>
       </header>
 
-      {/* Cut grid */}
       <div style={s.grid}>
         {CUTS.map(cut => (
-          <button
-            key={cut.id}
-            className="glass"
-            style={s.card}
-            onClick={() => nav(`/setup/${cut.id}`)}
-          >
-            <span style={s.cardEmoji}>{cut.emoji}</span>
-            <span style={s.cardName}>{cut.name}</span>
-            <span style={s.cardDesc}>{cut.description}</span>
-          </button>
+          <div key={cut.id} style={s.cell}>
+            <LiquidGlass
+              displacementScale={55}
+              blurAmount={0.08}
+              saturation={150}
+              aberrationIntensity={1.5}
+              elasticity={0.2}
+              cornerRadius={20}
+              padding="22px 14px 18px"
+              onClick={() => nav(`/setup/${cut.id}`)}
+              style={{ width: '100%', cursor: 'pointer' }}
+            >
+              <div style={s.cardInner}>
+                <span style={s.cardEmoji}>{cut.emoji}</span>
+                <span style={s.cardName}>{cut.name}</span>
+                <span style={s.cardDesc}>{cut.description}</span>
+              </div>
+            </LiquidGlass>
+          </div>
         ))}
       </div>
 
@@ -40,10 +48,7 @@ const s: Record<string, React.CSSProperties> = {
     paddingTop: 'calc(env(safe-area-inset-top) + 28px)',
   },
   header: { marginBottom: 28 },
-  title: {
-    fontSize: 34, fontWeight: 700, color: '#fff',
-    margin: 0, letterSpacing: -0.8,
-  },
+  title: { fontSize: 34, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: -0.8 },
   subtitle: {
     fontSize: 15, color: 'rgba(235, 235, 245, 0.55)',
     margin: '4px 0 0', fontWeight: 400, letterSpacing: -0.2,
@@ -53,10 +58,10 @@ const s: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '1fr 1fr',
     gap: 12,
   },
-  card: {
-    padding: '22px 14px 18px',
-    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0,
-    textAlign: 'left', cursor: 'pointer',
+  cell: { width: '100%' },
+  cardInner: {
+    display: 'flex', flexDirection: 'column',
+    alignItems: 'flex-start', textAlign: 'left',
   },
   cardEmoji: { fontSize: 32, lineHeight: 1, marginBottom: 12 },
   cardName: {
