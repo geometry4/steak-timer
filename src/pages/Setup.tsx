@@ -18,7 +18,7 @@ export function Setup() {
   const [stages, setStages] = useState<Stage[]>(() =>
     applyCustomDurations(
       JSON.parse(JSON.stringify(cut!.presets[0].stages)),
-      cut!.id, 0,
+      cut!.id, cut!.presets[0].thickness,
     )
   );
   const [useBaste, setUseBaste] = useState(true);
@@ -62,7 +62,7 @@ export function Setup() {
     setPresetIdx(i);
     setStages(applyCustomDurations(
       JSON.parse(JSON.stringify(cut!.presets[i].stages)),
-      cut!.id, i,
+      cut!.id, cut!.presets[i].thickness,
     ));
     moveIndicator(i, true);
   }
@@ -81,7 +81,7 @@ export function Setup() {
     setStages(prev => prev.map((st, i) =>
       i === editIdx ? { ...st, duration: newDur } : st
     ));
-    saveStageDuration(cut!.id, presetIdx, editedType, newDur);
+    saveStageDuration(cut!.id, cut!.presets[presetIdx].thickness, editedType, newDur);
     setEditIdx(null);
   }
 
@@ -171,7 +171,7 @@ export function Setup() {
             <p style={s.sheetTitle}>{stages[editIdx].label}</p>
             <div style={s.steppers}>
               <Stepper label="分" value={picMin} min={0} max={30} onChange={setPicMin} />
-              <Stepper label="秒" value={picSec} min={0} max={55} step={5} onChange={setPicSec} />
+              <Stepper label="秒" value={picSec} min={0} max={55} step={5} onChange={setPicSec} wrap />
             </div>
             <div style={s.sheetBtns}>
               <button style={s.cancelBtn} onClick={() => setEditIdx(null)}>取消</button>
@@ -186,15 +186,21 @@ export function Setup() {
   );
 }
 
-function Stepper({ label, value, min, max, step = 1, onChange }: {
+function Stepper({ label, value, min, max, step = 1, onChange, wrap = false }: {
   label: string; value: number; min: number; max: number; step?: number;
-  onChange: (v: number) => void;
+  onChange: (v: number) => void; wrap?: boolean;
 }) {
+  const next = value + step > max
+    ? (wrap ? min : max)
+    : value + step;
+  const prev = value - step < min
+    ? (wrap ? max : min)
+    : value - step;
   return (
     <div className="stepper">
-      <button className="stepper-btn" onClick={() => onChange(Math.min(max, value + step))}>＋</button>
+      <button className="stepper-btn" onClick={() => onChange(next)}>＋</button>
       <div className="stepper-val">{value}<span className="stepper-unit"> {label}</span></div>
-      <button className="stepper-btn" onClick={() => onChange(Math.max(min, value - step))}>－</button>
+      <button className="stepper-btn" onClick={() => onChange(prev)}>－</button>
     </div>
   );
 }
