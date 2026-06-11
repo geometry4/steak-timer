@@ -1,6 +1,5 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import LiquidGlass from 'liquid-glass-react';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
 import type { Stage, CookingConfig } from '../types';
@@ -94,19 +93,7 @@ export function Setup() {
   return (
     <div style={s.page}>
       <header style={s.header}>
-        <LiquidGlass
-          displacementScale={40}
-          blurAmount={0.06}
-          saturation={140}
-          aberrationIntensity={1}
-          elasticity={0.25}
-          cornerRadius={19}
-          padding="9px 14px"
-          onClick={() => nav(-1)}
-          style={{ cursor: 'pointer' }}
-        >
-          <span style={s.backArrow}>←</span>
-        </LiquidGlass>
+        <button className="glass-pill" style={s.backBtn} onClick={() => nav(-1)}>←</button>
         <div style={{ flex: 1 }}>
           <h2 style={s.title}>{cut.name}</h2>
           <p style={s.subtitle}>{cut.nameEn}</p>
@@ -114,7 +101,6 @@ export function Setup() {
       </header>
 
       <div style={s.scroll}>
-        {/* Thickness — keep CSS glass (segmented control has internal animated indicator) */}
         <section>
           <p className="sec-label">厚度</p>
           <div ref={segRef} className="liquid-seg glass" style={{ borderRadius: 14 }}>
@@ -131,59 +117,35 @@ export function Setup() {
           </div>
         </section>
 
-        {/* Butter baste */}
         <section>
-          <LiquidGlass
-            displacementScale={50}
-            blurAmount={0.08}
-            saturation={150}
-            aberrationIntensity={1.5}
-            elasticity={0.15}
-            cornerRadius={20}
-            padding="14px 18px"
-            style={{ width: '100%' }}
-          >
-            <div style={s.row}>
-              <div style={{ flex: 1 }}>
-                <div style={s.rowTitle}>黄油 Baste</div>
-                <div style={s.rowSub}>黄油 · 大蒜 · 香草</div>
-              </div>
-              <button
-                className={`toggle ${useBaste ? 'on' : 'off'}`}
-                onClick={() => setUseBaste(v => !v)}
-                aria-label="butter baste"
-              />
+          <div className="glass" style={s.row}>
+            <div style={{ flex: 1 }}>
+              <div style={s.rowTitle}>黄油 Baste</div>
+              <div style={s.rowSub}>黄油 · 大蒜 · 香草</div>
             </div>
-          </LiquidGlass>
+            <button
+              className={`toggle ${useBaste ? 'on' : 'off'}`}
+              onClick={() => setUseBaste(v => !v)}
+              aria-label="butter baste"
+            />
+          </div>
         </section>
 
-        {/* Stage list */}
         <section>
           <p className="sec-label">阶段时间</p>
-          <LiquidGlass
-            displacementScale={50}
-            blurAmount={0.08}
-            saturation={150}
-            aberrationIntensity={1.5}
-            elasticity={0.1}
-            cornerRadius={20}
-            padding="0"
-            style={{ width: '100%' }}
-          >
-            <div style={s.stageList}>
-              {visible.map((stage, i) => (
-                <div key={stage.id}>
-                  <button style={s.stageRow} onClick={() => openEdit(stages.indexOf(stage))}>
-                    <span style={{ fontSize: 18, width: 26 }}>{ICONS[stage.type]}</span>
-                    <span style={s.stageName}>{stage.label}</span>
-                    <span style={s.durationLabel}>{fmt(stage.duration)}</span>
-                    <span style={s.chevron}>›</span>
-                  </button>
-                  {i < visible.length - 1 && <div className="divider" />}
-                </div>
-              ))}
-            </div>
-          </LiquidGlass>
+          <div className="glass" style={s.stageList}>
+            {visible.map((stage, i) => (
+              <div key={stage.id}>
+                <button style={s.stageRow} onClick={() => openEdit(stages.indexOf(stage))}>
+                  <span style={{ fontSize: 18, width: 26 }}>{ICONS[stage.type]}</span>
+                  <span style={s.stageName}>{stage.label}</span>
+                  <span style={s.durationLabel}>{fmt(stage.duration)}</span>
+                  <span style={s.chevron}>›</span>
+                </button>
+                {i < visible.length - 1 && <div className="divider" />}
+              </div>
+            ))}
+          </div>
         </section>
 
         <div style={{ height: 90 }} />
@@ -244,17 +206,21 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', gap: 14,
     marginBottom: 28, flexShrink: 0,
   },
-  backArrow: { color: '#fff', fontSize: 18, fontWeight: 500, lineHeight: 1, display: 'inline-block' },
+  backBtn: {
+    width: 38, height: 38,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#fff', fontSize: 18, fontWeight: 500, lineHeight: 1, border: 'none',
+  },
   title: { fontSize: 22, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: -0.5 },
   subtitle: {
     fontSize: 13, color: 'rgba(235, 235, 245, 0.5)',
     margin: '2px 0 0', fontWeight: 400, letterSpacing: -0.1,
   },
   scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 24, overflowY: 'auto' },
-  row: { display: 'flex', alignItems: 'center', gap: 12 },
+  row: { padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 },
   rowTitle: { fontSize: 16, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
   rowSub: { fontSize: 13, color: 'rgba(235, 235, 245, 0.5)', marginTop: 2, fontWeight: 400 },
-  stageList: { width: '100%' },
+  stageList: { overflow: 'hidden' },
   stageRow: {
     width: '100%', background: 'none', border: 'none',
     display: 'flex', alignItems: 'center', padding: '14px 18px', gap: 12,
