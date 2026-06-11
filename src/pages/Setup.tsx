@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
+import { applyCustomDurations, saveStageDuration } from '../utils/storage';
 import type { Stage, CookingConfig } from '../types';
 
 const ICONS: Record<Stage['type'], string> = {
@@ -15,7 +16,10 @@ export function Setup() {
 
   const [presetIdx, setPresetIdx] = useState(0);
   const [stages, setStages] = useState<Stage[]>(() =>
-    JSON.parse(JSON.stringify(cut!.presets[0].stages))
+    applyCustomDurations(
+      JSON.parse(JSON.stringify(cut!.presets[0].stages)),
+      cut!.id, 0,
+    )
   );
   const [useBaste, setUseBaste] = useState(true);
   const [editIdx, setEditIdx] = useState<number | null>(null);
@@ -56,7 +60,10 @@ export function Setup() {
 
   function selectPreset(i: number) {
     setPresetIdx(i);
-    setStages(JSON.parse(JSON.stringify(cut!.presets[i].stages)));
+    setStages(applyCustomDurations(
+      JSON.parse(JSON.stringify(cut!.presets[i].stages)),
+      cut!.id, i,
+    ));
     moveIndicator(i, true);
   }
 
@@ -69,9 +76,12 @@ export function Setup() {
 
   function confirmEdit() {
     if (editIdx === null) return;
+    const newDur = picMin * 60 + picSec;
+    const editedType = stages[editIdx].type;
     setStages(prev => prev.map((st, i) =>
-      i === editIdx ? { ...st, duration: picMin * 60 + picSec } : st
+      i === editIdx ? { ...st, duration: newDur } : st
     ));
+    saveStageDuration(cut!.id, presetIdx, editedType, newDur);
     setEditIdx(null);
   }
 
@@ -148,7 +158,7 @@ export function Setup() {
           </div>
         </section>
 
-        <div style={{ height: 90 }} />
+        <div style={{ flex: 1 }} />
       </div>
 
       <div style={s.footer}>
@@ -198,9 +208,10 @@ function fmt(sec: number) {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+    height: '100dvh', display: 'flex', flexDirection: 'column',
     padding: '0 20px',
     paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+    overflow: 'hidden',
   },
   header: {
     display: 'flex', alignItems: 'center', gap: 14,
@@ -216,7 +227,7 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 13, color: 'rgba(235, 235, 245, 0.5)',
     margin: '2px 0 0', fontWeight: 400, letterSpacing: -0.1,
   },
-  scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 24, overflowY: 'auto' },
+  scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 18, overflow: 'hidden' },
   row: { padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 },
   rowTitle: { fontSize: 16, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
   rowSub: { fontSize: 13, color: 'rgba(235, 235, 245, 0.5)', marginTop: 2, fontWeight: 400 },

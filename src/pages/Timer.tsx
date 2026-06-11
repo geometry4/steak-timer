@@ -142,11 +142,12 @@ function fmtTime(sec: number) {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100dvh',
+    height: '100dvh',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '0 24px',
     paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
     position: 'relative',
+    overflow: 'hidden',
   },
   exitBtn: {
     position: 'absolute',
@@ -176,10 +177,11 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 14, fontWeight: 500,
   },
   donePage: {
-    minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+    height: '100dvh', display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'space-between',
     padding: '80px 24px 32px',
     paddingBottom: 'calc(env(safe-area-inset-bottom) + 28px)',
+    overflow: 'hidden',
   },
   doneContent: {
     display: 'flex', flexDirection: 'column',

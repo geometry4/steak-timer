@@ -3,6 +3,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
+import { applyCustomDurations, saveStageDuration } from '../utils/storage';
 const ICONS = {
     cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
 };
@@ -11,7 +12,7 @@ export function Setup() {
     const nav = useNavigate();
     const cut = getCut(cutId);
     const [presetIdx, setPresetIdx] = useState(0);
-    const [stages, setStages] = useState(() => JSON.parse(JSON.stringify(cut.presets[0].stages)));
+    const [stages, setStages] = useState(() => applyCustomDurations(JSON.parse(JSON.stringify(cut.presets[0].stages)), cut.id, 0));
     const [useBaste, setUseBaste] = useState(true);
     const [editIdx, setEditIdx] = useState(null);
     const [picMin, setPicMin] = useState(0);
@@ -49,7 +50,7 @@ export function Setup() {
     useLayoutEffect(() => { moveIndicator(presetIdx, false); }, []);
     function selectPreset(i) {
         setPresetIdx(i);
-        setStages(JSON.parse(JSON.stringify(cut.presets[i].stages)));
+        setStages(applyCustomDurations(JSON.parse(JSON.stringify(cut.presets[i].stages)), cut.id, i));
         moveIndicator(i, true);
     }
     function openEdit(idx) {
@@ -61,7 +62,10 @@ export function Setup() {
     function confirmEdit() {
         if (editIdx === null)
             return;
-        setStages(prev => prev.map((st, i) => i === editIdx ? { ...st, duration: picMin * 60 + picSec } : st));
+        const newDur = picMin * 60 + picSec;
+        const editedType = stages[editIdx].type;
+        setStages(prev => prev.map((st, i) => i === editIdx ? { ...st, duration: newDur } : st));
+        saveStageDuration(cut.id, presetIdx, editedType, newDur);
         setEditIdx(null);
     }
     function start() {
@@ -78,7 +82,7 @@ export function Setup() {
     if (!cut)
         return null;
     const visible = stages.filter(st => st.type !== 'baste' || useBaste);
-    return (_jsxs("div", { style: s.page, children: [_jsxs("header", { style: s.header, children: [_jsx("button", { className: "glass-pill", style: s.backBtn, onClick: () => nav(-1), children: "\u2190" }), _jsxs("div", { style: { flex: 1 }, children: [_jsx("h2", { style: s.title, children: cut.name }), _jsx("p", { style: s.subtitle, children: cut.nameEn })] })] }), _jsxs("div", { style: s.scroll, children: [_jsxs("section", { children: [_jsx("p", { className: "sec-label", children: "\u539A\u5EA6" }), _jsxs("div", { ref: segRef, className: "liquid-seg glass", style: { borderRadius: 14 }, children: [_jsx("div", { ref: indRef, className: "seg-indicator" }), cut.presets.map((p, i) => (_jsxs("button", { className: i === presetIdx ? 'active' : '', onClick: () => selectPreset(i), children: [p.thickness, "cm"] }, p.id)))] })] }), _jsx("section", { children: _jsxs("div", { className: "glass", style: s.row, children: [_jsxs("div", { style: { flex: 1 }, children: [_jsx("div", { style: s.rowTitle, children: "\u9EC4\u6CB9 Baste" }), _jsx("div", { style: s.rowSub, children: "\u9EC4\u6CB9 \u00B7 \u5927\u849C \u00B7 \u9999\u8349" })] }), _jsx("button", { className: `toggle ${useBaste ? 'on' : 'off'}`, onClick: () => setUseBaste(v => !v), "aria-label": "butter baste" })] }) }), _jsxs("section", { children: [_jsx("p", { className: "sec-label", children: "\u9636\u6BB5\u65F6\u95F4" }), _jsx("div", { className: "glass", style: s.stageList, children: visible.map((stage, i) => (_jsxs("div", { children: [_jsxs("button", { style: s.stageRow, onClick: () => openEdit(stages.indexOf(stage)), children: [_jsx("span", { style: { fontSize: 18, width: 26 }, children: ICONS[stage.type] }), _jsx("span", { style: s.stageName, children: stage.label }), _jsx("span", { style: s.durationLabel, children: fmt(stage.duration) }), _jsx("span", { style: s.chevron, children: "\u203A" })] }), i < visible.length - 1 && _jsx("div", { className: "divider" })] }, stage.id))) })] }), _jsx("div", { style: { height: 90 } })] }), _jsx("div", { style: s.footer, children: _jsx("button", { className: "btn-primary", onClick: start, children: "\u5F00\u59CB\u8BA1\u65F6" }) }), editIdx !== null && (_jsx("div", { className: "sheet-backdrop", onClick: () => setEditIdx(null), children: _jsxs("div", { className: "glass sheet", onClick: e => e.stopPropagation(), children: [_jsx("p", { style: s.sheetTitle, children: stages[editIdx].label }), _jsxs("div", { style: s.steppers, children: [_jsx(Stepper, { label: "\u5206", value: picMin, min: 0, max: 30, onChange: setPicMin }), _jsx(Stepper, { label: "\u79D2", value: picSec, min: 0, max: 55, step: 5, onChange: setPicSec })] }), _jsxs("div", { style: s.sheetBtns, children: [_jsx("button", { style: s.cancelBtn, onClick: () => setEditIdx(null), children: "\u53D6\u6D88" }), _jsx("button", { className: "btn-primary", style: { flex: 1, height: 48 }, onClick: confirmEdit, children: "\u786E\u5B9A" })] })] }) }))] }));
+    return (_jsxs("div", { style: s.page, children: [_jsxs("header", { style: s.header, children: [_jsx("button", { className: "glass-pill", style: s.backBtn, onClick: () => nav(-1), children: "\u2190" }), _jsxs("div", { style: { flex: 1 }, children: [_jsx("h2", { style: s.title, children: cut.name }), _jsx("p", { style: s.subtitle, children: cut.nameEn })] })] }), _jsxs("div", { style: s.scroll, children: [_jsxs("section", { children: [_jsx("p", { className: "sec-label", children: "\u539A\u5EA6" }), _jsxs("div", { ref: segRef, className: "liquid-seg glass", style: { borderRadius: 14 }, children: [_jsx("div", { ref: indRef, className: "seg-indicator" }), cut.presets.map((p, i) => (_jsxs("button", { className: i === presetIdx ? 'active' : '', onClick: () => selectPreset(i), children: [p.thickness, "cm"] }, p.id)))] })] }), _jsx("section", { children: _jsxs("div", { className: "glass", style: s.row, children: [_jsxs("div", { style: { flex: 1 }, children: [_jsx("div", { style: s.rowTitle, children: "\u9EC4\u6CB9 Baste" }), _jsx("div", { style: s.rowSub, children: "\u9EC4\u6CB9 \u00B7 \u5927\u849C \u00B7 \u9999\u8349" })] }), _jsx("button", { className: `toggle ${useBaste ? 'on' : 'off'}`, onClick: () => setUseBaste(v => !v), "aria-label": "butter baste" })] }) }), _jsxs("section", { children: [_jsx("p", { className: "sec-label", children: "\u9636\u6BB5\u65F6\u95F4" }), _jsx("div", { className: "glass", style: s.stageList, children: visible.map((stage, i) => (_jsxs("div", { children: [_jsxs("button", { style: s.stageRow, onClick: () => openEdit(stages.indexOf(stage)), children: [_jsx("span", { style: { fontSize: 18, width: 26 }, children: ICONS[stage.type] }), _jsx("span", { style: s.stageName, children: stage.label }), _jsx("span", { style: s.durationLabel, children: fmt(stage.duration) }), _jsx("span", { style: s.chevron, children: "\u203A" })] }), i < visible.length - 1 && _jsx("div", { className: "divider" })] }, stage.id))) })] }), _jsx("div", { style: { flex: 1 } })] }), _jsx("div", { style: s.footer, children: _jsx("button", { className: "btn-primary", onClick: start, children: "\u5F00\u59CB\u8BA1\u65F6" }) }), editIdx !== null && (_jsx("div", { className: "sheet-backdrop", onClick: () => setEditIdx(null), children: _jsxs("div", { className: "glass sheet", onClick: e => e.stopPropagation(), children: [_jsx("p", { style: s.sheetTitle, children: stages[editIdx].label }), _jsxs("div", { style: s.steppers, children: [_jsx(Stepper, { label: "\u5206", value: picMin, min: 0, max: 30, onChange: setPicMin }), _jsx(Stepper, { label: "\u79D2", value: picSec, min: 0, max: 55, step: 5, onChange: setPicSec })] }), _jsxs("div", { style: s.sheetBtns, children: [_jsx("button", { style: s.cancelBtn, onClick: () => setEditIdx(null), children: "\u53D6\u6D88" }), _jsx("button", { className: "btn-primary", style: { flex: 1, height: 48 }, onClick: confirmEdit, children: "\u786E\u5B9A" })] })] }) }))] }));
 }
 function Stepper({ label, value, min, max, step = 1, onChange }) {
     return (_jsxs("div", { className: "stepper", children: [_jsx("button", { className: "stepper-btn", onClick: () => onChange(Math.min(max, value + step)), children: "\uFF0B" }), _jsxs("div", { className: "stepper-val", children: [value, _jsxs("span", { className: "stepper-unit", children: [" ", label] })] }), _jsx("button", { className: "stepper-btn", onClick: () => onChange(Math.max(min, value - step)), children: "\uFF0D" })] }));
@@ -93,9 +97,10 @@ function fmt(sec) {
 }
 const s = {
     page: {
-        minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+        height: '100dvh', display: 'flex', flexDirection: 'column',
         padding: '0 20px',
         paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+        overflow: 'hidden',
     },
     header: {
         display: 'flex', alignItems: 'center', gap: 14,
@@ -111,7 +116,7 @@ const s = {
         fontSize: 13, color: 'rgba(235, 235, 245, 0.5)',
         margin: '2px 0 0', fontWeight: 400, letterSpacing: -0.1,
     },
-    scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 24, overflowY: 'auto' },
+    scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 18, overflow: 'hidden' },
     row: { padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 },
     rowTitle: { fontSize: 16, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
     rowSub: { fontSize: 13, color: 'rgba(235, 235, 245, 0.5)', marginTop: 2, fontWeight: 400 },

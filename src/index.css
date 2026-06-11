@@ -1,6 +1,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #root { margin: 0; padding: 0; min-height: 100dvh; }
+html, body, #root {
+  margin: 0; padding: 0;
+  height: 100dvh;
+  overflow: hidden;            /* lock viewport — no scroll */
+  overscroll-behavior: none;   /* iOS rubber-band off */
+}
 
 html, body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
