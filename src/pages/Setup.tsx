@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
 import type { Stage, CookingConfig } from '../types';
+import '../index.css';
 
-const ICONS: Record<Stage['type'], string> = { cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️' };
+const ICONS: Record<Stage['type'], string> = {
+  cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
+};
 
 export function Setup() {
   const { cutId } = useParams<{ cutId: string }>();
@@ -20,16 +23,49 @@ export function Setup() {
   const [picMin, setPicMin] = useState(0);
   const [picSec, setPicSec] = useState(0);
 
-  if (!cut) return null;
+  const segRef = useRef<HTMLDivElement>(null);
+
+  // Move liquid indicator to the selected preset button
+  function moveIndicator(idx: number, animate: boolean) {
+    const el = segRef.current;
+    if (!el) return;
+    const btns = el.querySelectorAll('button');
+    const btn = btns[idx] as HTMLElement;
+    if (!btn) return;
+    const cr = el.getBoundingClientRect();
+    const br = btn.getBoundingClientRect();
+    const x = br.left - cr.left;
+    const w = br.width;
+
+    if (!animate) {
+      el.style.setProperty('transition', 'none');
+      el.style.setProperty('--ind-x', `${x}px`);
+      el.style.setProperty('--ind-w', `${w}px`);
+      el.style.setProperty('--ind-scale', '1');
+      requestAnimationFrame(() => el.style.removeProperty('transition'));
+    } else {
+      el.style.setProperty('--ind-x', `${x}px`);
+      el.style.setProperty('--ind-w', `${w}px`);
+      el.style.setProperty('--ind-scale', '1.18');
+      setTimeout(() => el.style.setProperty('--ind-scale', '0.96'), 280);
+      setTimeout(() => el.style.setProperty('--ind-scale', '1'), 480);
+    }
+    // Update active class
+    btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+  }
+
+  useLayoutEffect(() => { moveIndicator(presetIdx, false); }, []);
 
   function selectPreset(i: number) {
     setPresetIdx(i);
     setStages(JSON.parse(JSON.stringify(cut!.presets[i].stages)));
+    moveIndicator(i, true);
   }
 
   function openEdit(idx: number) {
-    setPicMin(Math.floor(stages[idx].duration / 60));
-    setPicSec(stages[idx].duration % 60);
+    const d = stages[idx].duration;
+    setPicMin(Math.floor(d / 60));
+    setPicSec(d % 60);
     setEditIdx(idx);
   }
 
@@ -42,7 +78,7 @@ export function Setup() {
   }
 
   function start() {
-    initAudio();   // must be in user gesture
+    initAudio();
     const active = useBaste ? stages : stages.filter(s => s.type !== 'baste');
     const config: CookingConfig = {
       cutName: cut!.name,
@@ -53,76 +89,86 @@ export function Setup() {
     nav('/timer');
   }
 
+  if (!cut) return null;
   const visible = stages.filter(s => s.type !== 'baste' || useBaste);
 
   return (
     <div style={s.page}>
-      {/* Back */}
-      <button style={s.back} onClick={() => nav(-1)}>← 返回</button>
-      <h2 style={s.heading}>{cut.emoji} {cut.name} · 设置</h2>
+      {/* Glass top bar */}
+      <header className="glass" style={s.topbar}>
+        <button style={s.backBtn} onClick={() => nav(-1)}>←</button>
+        <span style={s.topbarTitle}>{cut.emoji} {cut.name}</span>
+      </header>
 
-      {/* Thickness */}
-      <label style={s.label}>厚度</label>
-      <div style={s.row}>
-        {cut.presets.map((p, i) => (
-          <button
-            key={p.id}
-            style={{ ...s.thickBtn, ...(i === presetIdx ? s.thickBtnOn : {}) }}
-            onClick={() => selectPreset(i)}
-          >
-            {p.thickness}cm
-          </button>
-        ))}
-      </div>
-
-      {/* Baste toggle */}
-      <div style={s.card}>
+      <div style={s.scroll}>
+        {/* Thickness — liquid segmented control */}
         <div>
-          <div style={s.cardTitle}>黄油 Baste</div>
-          <div style={s.cardSub}>黄油 + 大蒜 + 香草，增香提味</div>
-        </div>
-        <button
-          style={{ ...s.toggle, background: useBaste ? '#FF8C00' : '#333' }}
-          onClick={() => setUseBaste(v => !v)}
-        >
-          <div style={{ ...s.toggleKnob, transform: useBaste ? 'translateX(22px)' : 'translateX(2px)' }} />
-        </button>
-      </div>
-
-      {/* Stages */}
-      <label style={s.label}>计时阶段（点时间可修改）</label>
-      <div style={s.stageList}>
-        {visible.map((stage, i) => (
-          <div key={stage.id}>
-            <div style={s.stageRow}>
-              <span style={{ fontSize: 20, width: 28 }}>{ICONS[stage.type]}</span>
-              <span style={s.stageName}>{stage.label}</span>
-              <button style={s.durationBtn} onClick={() => openEdit(stages.indexOf(stage))}>
-                {fmt(stage.duration)}
+          <p className="sec-label">厚度</p>
+          <div ref={segRef} className="liquid-seg glass" style={s.seg}>
+            {cut.presets.map((p, i) => (
+              <button
+                key={p.id}
+                className={i === presetIdx ? 'active' : ''}
+                onClick={() => selectPreset(i)}
+              >
+                {p.thickness}cm
               </button>
-            </div>
-            {i < visible.length - 1 && <div style={s.divider} />}
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Butter baste toggle */}
+        <div className="glass" style={s.row}>
+          <div>
+            <div style={s.rowTitle}>黄油 Baste</div>
+            <div style={s.rowSub}>黄油 · 大蒜 · 香草</div>
+          </div>
+          <button
+            className={`toggle-wrap ${useBaste ? 'on' : 'off'}`}
+            onClick={() => setUseBaste(v => !v)}
+            aria-label="黄油baste开关"
+          />
+        </div>
+
+        {/* Stage list */}
+        <div>
+          <p className="sec-label">计时阶段（点时间修改）</p>
+          <div className="glass" style={s.stageList}>
+            {visible.map((stage, i) => (
+              <div key={stage.id}>
+                <div style={s.stageRow}>
+                  <span style={{ fontSize: 20, width: 28 }}>{ICONS[stage.type]}</span>
+                  <span style={s.stageName}>{stage.label}</span>
+                  <button style={s.durationBtn} onClick={() => openEdit(stages.indexOf(stage))}>
+                    {fmt(stage.duration)}
+                  </button>
+                </div>
+                {i < visible.length - 1 && <div className="stage-divider" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ height: 100 }} />
       </div>
 
-      <div style={{ flex: 1 }} />
+      {/* Sticky start button */}
+      <div style={s.footer}>
+        <button className="btn-primary" onClick={start}>开始计时</button>
+      </div>
 
-      {/* Start */}
-      <button style={s.startBtn} onClick={start}>开始计时</button>
-
-      {/* Duration modal */}
+      {/* Duration editor sheet */}
       {editIdx !== null && (
-        <div style={s.backdrop}>
-          <div style={s.modal}>
-            <h3 style={{ margin: '0 0 20px', color: '#fff' }}>{stages[editIdx].label}</h3>
+        <div className="sheet-backdrop" onClick={() => setEditIdx(null)}>
+          <div className="glass sheet" onClick={e => e.stopPropagation()}>
+            <p style={s.sheetTitle}>{stages[editIdx].label}</p>
             <div style={s.steppers}>
               <Stepper label="分" value={picMin} min={0} max={30} onChange={setPicMin} />
               <Stepper label="秒" value={picSec} min={0} max={55} step={5} onChange={setPicSec} />
             </div>
-            <div style={s.modalBtns}>
+            <div style={s.sheetBtns}>
               <button style={s.cancelBtn} onClick={() => setEditIdx(null)}>取消</button>
-              <button style={s.confirmBtn} onClick={confirmEdit}>确定</button>
+              <button className="btn-primary" style={{ flex: 1, height: 52 }} onClick={confirmEdit}>确定</button>
             </div>
           </div>
         </div>
@@ -132,14 +178,14 @@ export function Setup() {
 }
 
 function Stepper({ label, value, min, max, step = 1, onChange }: {
-  label: string; value: number; min: number; max: number;
-  step?: number; onChange: (v: number) => void;
+  label: string; value: number; min: number; max: number; step?: number;
+  onChange: (v: number) => void;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <button style={sp.btn} onClick={() => onChange(Math.min(max, value + step))}>＋</button>
-      <div style={sp.val}>{value}<span style={sp.unit}> {label}</span></div>
-      <button style={sp.btn} onClick={() => onChange(Math.max(min, value - step))}>－</button>
+    <div className="stepper">
+      <button className="stepper-btn" onClick={() => onChange(Math.min(max, value + step))}>＋</button>
+      <div className="stepper-val">{value}<span className="stepper-unit"> {label}</span></div>
+      <button className="stepper-btn" onClick={() => onChange(Math.max(min, value - step))}>－</button>
     </div>
   );
 }
@@ -153,39 +199,53 @@ function fmt(sec: number) {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100dvh', background: '#000', color: '#fff',
-    display: 'flex', flexDirection: 'column', gap: 14,
+    minHeight: '100dvh', display: 'flex', flexDirection: 'column',
     padding: '0 16px',
-    paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
+    paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
   },
-  back: { background: 'none', border: 'none', color: '#FF8C00', fontSize: 16, padding: 0, cursor: 'pointer', textAlign: 'left' },
-  heading: { fontSize: 22, fontWeight: 700, margin: 0 },
-  label: { fontSize: 12, color: '#555', textTransform: 'uppercase', letterSpacing: 1 },
-  row: { display: 'flex', gap: 10 },
-  thickBtn: { flex: 1, height: 50, borderRadius: 12, border: 'none', background: '#151515', color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer' },
-  thickBtnOn: { background: '#FF8C00', color: '#000' },
-  card: { background: '#111', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 16, fontWeight: 600 },
-  cardSub: { fontSize: 12, color: '#555', marginTop: 2 },
-  toggle: { width: 50, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 },
-  toggleKnob: { position: 'absolute', top: 3, width: 22, height: 22, borderRadius: 11, background: '#fff', transition: 'transform 0.2s' },
-  stageList: { background: '#111', borderRadius: 16, overflow: 'hidden' },
-  stageRow: { display: 'flex', alignItems: 'center', padding: '14px 16px', gap: 12 },
-  stageName: { flex: 1, fontSize: 16, fontWeight: 600 },
-  durationBtn: { background: 'none', border: 'none', color: '#FF8C00', fontSize: 16, fontWeight: 600, cursor: 'pointer' },
-  divider: { height: 1, background: '#1e1e1e', margin: '0 16px' },
-  startBtn: { width: '100%', height: 64, borderRadius: 18, border: 'none', background: '#FF8C00', color: '#000', fontSize: 20, fontWeight: 700, cursor: 'pointer' },
-  backdrop: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end' },
-  modal: { width: '100%', background: '#111', borderRadius: '24px 24px 0 0', padding: '24px 24px calc(env(safe-area-inset-bottom) + 24px)' },
+  topbar: {
+    borderRadius: 16, padding: '12px 18px',
+    display: 'flex', alignItems: 'center', gap: 12,
+    marginBottom: 20, flexShrink: 0,
+  },
+  backBtn: {
+    background: 'none', border: 'none',
+    color: '#FF8C00', fontSize: 20, padding: '0 4px', lineHeight: 1,
+  },
+  topbarTitle: { fontSize: 17, fontWeight: 700, color: '#f5f0eb' },
+  scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' },
+  seg: { borderRadius: 14 },
+  row: {
+    borderRadius: 16, padding: '14px 18px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+  },
+  rowTitle: { fontSize: 15, fontWeight: 600, color: '#f5f0eb' },
+  rowSub: { fontSize: 12, color: 'rgba(245,240,235,0.38)', marginTop: 2 },
+  stageList: { borderRadius: 16, overflow: 'hidden' },
+  stageRow: {
+    display: 'flex', alignItems: 'center',
+    padding: '14px 18px', gap: 12,
+  },
+  stageName: { flex: 1, fontSize: 15, fontWeight: 600, color: '#f5f0eb' },
+  durationBtn: {
+    background: 'none', border: 'none',
+    color: '#FF8C00', fontSize: 15, fontWeight: 600,
+  },
+  footer: {
+    padding: '12px 0',
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+    flexShrink: 0,
+  },
+  sheetTitle: {
+    fontSize: 17, fontWeight: 700, color: '#f5f0eb',
+    textAlign: 'center', margin: '0 0 20px',
+  },
   steppers: { display: 'flex', justifyContent: 'space-around', marginBottom: 24 },
-  modalBtns: { display: 'flex', gap: 12 },
-  cancelBtn: { flex: 1, height: 52, borderRadius: 14, border: 'none', background: '#1c1c1c', color: '#555', fontSize: 16, cursor: 'pointer' },
-  confirmBtn: { flex: 1, height: 52, borderRadius: 14, border: 'none', background: '#FF8C00', color: '#000', fontSize: 16, fontWeight: 700, cursor: 'pointer' },
-};
-
-const sp: Record<string, React.CSSProperties> = {
-  btn: { width: 48, height: 48, borderRadius: 24, border: 'none', background: '#1c1c1c', color: '#fff', fontSize: 24, cursor: 'pointer' },
-  val: { fontSize: 36, fontWeight: 700, color: '#fff', minWidth: 80, textAlign: 'center' },
-  unit: { fontSize: 16, fontWeight: 400, color: '#555' },
+  sheetBtns: { display: 'flex', gap: 10 },
+  cancelBtn: {
+    flex: 1, height: 52, borderRadius: 14,
+    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.06)',
+    color: 'rgba(245,240,235,0.5)', fontSize: 15,
+  },
 };

@@ -1,0 +1,205 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 0%,   rgba(255,140,0,0.13) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 100%, rgba(180,60,0,0.09)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 60% at 50% 50%,  rgba(255,100,0,0.04) 0%, transparent 70%),
+    #100e0c;
+  min-height: 100dvh;
+  color: #f5f0eb;
+}
+
+button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
+
+/* ── Liquid Glass material (dark variant) ─────────────────────────────── */
+.glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.13), rgba(255,255,255,0.04)),
+    rgba(22, 17, 12, 0.58);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow:
+    0 20px 52px rgba(0,0,0,0.44),
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 1px 0 0 rgba(255,255,255,0.10),
+    inset -1px -1px 0 rgba(255,255,255,0.05);
+  -webkit-backdrop-filter: blur(34px) saturate(190%) contrast(1.04);
+  backdrop-filter:         blur(34px) saturate(190%) contrast(1.04);
+}
+.glass::before {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background:
+    linear-gradient(110deg, rgba(255,255,255,0.18), transparent 18% 72%, rgba(255,255,255,0.08)),
+    radial-gradient(circle at 76% 14%, rgba(255,255,255,0.14), transparent 32%);
+  mix-blend-mode: screen;
+}
+.glass::after {
+  content: '';
+  position: absolute; inset: 1px; border-radius: inherit; pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  background-image:
+    linear-gradient(115deg, transparent 0 38%, rgba(255,255,255,0.07) 45%, transparent 52% 100%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 4px);
+  opacity: 0.8;
+}
+.glass > * { position: relative; z-index: 1; }
+
+/* Thinner glass for small controls */
+.glass-light {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.13);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter:         blur(20px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* ── Liquid Segmented Control ─────────────────────────────────────────── */
+.liquid-seg {
+  --ind-x: 4px;
+  --ind-w: 80px;
+  --ind-scale: 1;
+  position: relative;
+  display: flex;
+  padding: 4px;
+  border-radius: 14px;
+  touch-action: none;
+  user-select: none;
+}
+.liquid-seg::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 4px; bottom: 4px; left: 0;
+  width: var(--ind-w);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,0.28), transparent 44%),
+    linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04)),
+    rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.28);
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.52),
+    inset 1px 0 0 rgba(255,255,255,0.16);
+  -webkit-backdrop-filter: blur(18px) saturate(200%);
+  backdrop-filter:         blur(18px) saturate(200%);
+  transform: translateX(var(--ind-x)) scaleX(var(--ind-scale));
+  transform-origin: center;
+  transition:
+    transform 720ms cubic-bezier(0.19, 0.86, 0.2, 1),
+    width    720ms cubic-bezier(0.19, 0.86, 0.2, 1);
+}
+.liquid-seg button {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(245,240,235,0.7);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 0;
+  border-radius: 10px;
+  transition: color 200ms;
+}
+.liquid-seg button.active { color: #f5f0eb; }
+
+/* ── Apple toggle ─────────────────────────────────────────────────────── */
+.toggle-wrap {
+  width: 50px; height: 28px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 240ms;
+  flex-shrink: 0;
+}
+.toggle-wrap::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  border-radius: 11px;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.28);
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.toggle-wrap.on  { background: #FF8C00; }
+.toggle-wrap.off { background: rgba(255,255,255,0.14); }
+.toggle-wrap.on::after  { transform: translateX(22px); }
+.toggle-wrap.off::after { transform: translateX(0); }
+
+/* ── Primary CTA button ───────────────────────────────────────────────── */
+.btn-primary {
+  width: 100%;
+  height: 60px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #FF8C00, #e06b00);
+  color: #000;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  box-shadow: 0 4px 20px rgba(255,140,0,0.35), inset 0 1px 0 rgba(255,220,100,0.3);
+  transition: transform 120ms, box-shadow 120ms;
+}
+.btn-primary:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 10px rgba(255,140,0,0.25);
+}
+
+/* ── Glass modal sheet ────────────────────────────────────────────────── */
+.sheet-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: flex-end;
+  z-index: 100;
+}
+.sheet {
+  width: 100%;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 24px calc(env(safe-area-inset-bottom) + 24px);
+}
+
+/* ── Stepper ──────────────────────────────────────────────────────────── */
+.stepper { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.stepper-btn {
+  width: 48px; height: 48px; border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  color: #f5f0eb;
+  font-size: 22px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 120ms;
+}
+.stepper-btn:active { background: rgba(255,255,255,0.16); }
+.stepper-val {
+  font-size: 34px; font-weight: 700;
+  color: #f5f0eb; min-width: 72px; text-align: center;
+}
+.stepper-unit { font-size: 14px; font-weight: 400; color: rgba(245,240,235,0.45); }
+
+/* Section label */
+.sec-label {
+  font-size: 11px; font-weight: 600;
+  color: rgba(245,240,235,0.38);
+  text-transform: uppercase; letter-spacing: 1.1px;
+  margin-bottom: 8px;
+}
+
+/* Stage row divider */
+.stage-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 0 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-seg::before { transition: none; }
+}

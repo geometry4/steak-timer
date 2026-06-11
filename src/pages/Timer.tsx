@@ -3,21 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { CountdownRing } from '../components/CountdownRing';
 import { playAlarm } from '../utils/audio';
 import type { CookingConfig, Stage } from '../types';
+import '../index.css';
 
-const ICONS: Record<Stage['type'], string> = { cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️' };
+const ICONS: Record<Stage['type'], string> = {
+  cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
+};
 
 export function Timer() {
   const nav = useNavigate();
-  const config: CookingConfig = JSON.parse(sessionStorage.getItem('cookingConfig') || 'null');
+  const config: CookingConfig | null = JSON.parse(
+    sessionStorage.getItem('cookingConfig') || 'null'
+  );
 
   const [stageIdx, setStageIdx] = useState(0);
   const [remaining, setRemaining] = useState(config?.stages[0]?.duration ?? 0);
   const [done, setDone] = useState(false);
 
-  const startRef = useRef(Date.now());
-  const durRef = useRef(config?.stages[0]?.duration ?? 0);
-  const idxRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startRef   = useRef(Date.now());
+  const durRef     = useRef(config?.stages[0]?.duration ?? 0);
+  const idxRef     = useRef(0);
+  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const finish = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -46,84 +51,95 @@ export function Timer() {
     if (!config) { nav('/'); return; }
     const { stages } = config;
     timerRef.current = setInterval(() => tick(stages), 300);
-
     const onVisible = () => { if (document.visibilityState === 'visible') tick(stages); };
     document.addEventListener('visibilitychange', onVisible);
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, []);   // run once on mount
+  }, []);
 
   if (!config) return null;
 
   const { stages } = config;
-  const cur = stages[stageIdx];
+  const cur  = stages[stageIdx];
   const next = stages[stageIdx + 1];
   const progress = cur ? 1 - remaining / cur.duration : 1;
 
   if (done) {
     return (
-      <div style={{ ...s.page, justifyContent: 'center' }}>
-        <div style={{ fontSize: 90, textAlign: 'center' }}>🎉</div>
-        <h2 style={{ textAlign: 'center', fontSize: 36, margin: '16px 0 8px' }}>醒肉完成</h2>
-        <p style={{ textAlign: 'center', color: '#FF8C00', fontSize: 24, margin: '0 0 16px' }}>开吃！</p>
-        <p style={{ textAlign: 'center', color: '#555' }}>趁热享用你的完美牛排</p>
-        <div style={{ flex: 1 }} />
-        <button style={s.orangeBtn} onClick={() => nav('/')}>再来一块</button>
+      <div style={s.donePage}>
+        <div style={s.doneContent}>
+          <span style={{ fontSize: 88 }}>🎉</span>
+          <h2 style={s.doneTitle}>醒肉完成</h2>
+          <p style={s.doneOrange}>开吃！</p>
+          <p style={s.doneSub}>趁热享用你的完美牛排</p>
+        </div>
+        <div style={s.doneFooter}>
+          <button className="btn-primary" onClick={() => nav('/')}>再来一块</button>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={s.page}>
-      {/* Exit */}
-      <button style={s.exit} onClick={() => { if (timerRef.current) clearInterval(timerRef.current); nav('/'); }}>✕</button>
+      {/* Glass exit button */}
+      <button
+        className="glass-light"
+        style={s.exitBtn}
+        onClick={() => { if (timerRef.current) clearInterval(timerRef.current); nav('/'); }}
+      >
+        ✕
+      </button>
 
       <div style={{ flex: 1 }} />
 
-      {/* Stage name */}
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 24 }}>{cur && ICONS[cur.type]}</div>
-        <h2 style={{ fontSize: 32, fontWeight: 700, margin: '8px 0 4px' }}>{cur?.label}</h2>
-        <p style={{ color: '#444', fontSize: 15, margin: 0 }}>
-          {next ? `下一步：${next.label}` : '最后一步'}
+      {/* Stage name — clear content, no glass */}
+      <div style={s.stageInfo}>
+        <span style={s.stageIcon}>{cur && ICONS[cur.type]}</span>
+        <h2 style={s.stageName}>{cur?.label}</h2>
+        <p style={s.nextLabel}>
+          {next ? `下一步：${ICONS[next.type]} ${next.label}` : '最后一步'}
         </p>
       </div>
 
       <div style={{ flex: 1 }} />
 
-      {/* Ring */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      {/* Countdown ring — primary content, always clear */}
+      <div style={s.ringWrap}>
         <CountdownRing progress={progress}>
-          <span style={{ fontSize: 52, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-            {fmtTime(remaining)}
-          </span>
-          <span style={{ color: '#444', fontSize: 13 }}>剩余</span>
+          <span style={s.timeText}>{fmtTime(remaining)}</span>
+          <span style={s.remainLabel}>剩余</span>
         </CountdownRing>
       </div>
 
       <div style={{ flex: 1 }} />
 
-      {/* Stage dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+      {/* Stage dots — small glass pill */}
+      <div className="glass-light" style={s.dotsPill}>
         {stages.map((_, i) => (
           <div key={i} style={{
-            width: 8, height: 8, borderRadius: 4,
-            background: i < stageIdx ? 'rgba(255,140,0,0.4)' : i === stageIdx ? '#FF8C00' : '#222',
+            width: 7, height: 7, borderRadius: 4,
+            background: i < stageIdx
+              ? 'rgba(255,140,0,0.4)'
+              : i === stageIdx
+                ? '#FF8C00'
+                : 'rgba(255,255,255,0.18)',
+            transition: 'background 400ms',
           }} />
         ))}
       </div>
 
       <div style={{ flex: 0.5 }} />
 
-      {/* Skip */}
-      <button style={s.skipBtn} onClick={() => advanceTo(stageIdx + 1, stages)}>
+      {/* Skip — glass button */}
+      <button className="glass" style={s.skipBtn}
+        onClick={() => advanceTo(stageIdx + 1, stages)}>
         跳过此阶段
       </button>
 
-      <div style={{ height: 48 }} />
+      <div style={{ height: 'calc(env(safe-area-inset-bottom) + 40px)' }} />
     </div>
   );
 }
@@ -134,13 +150,50 @@ function fmtTime(sec: number) {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100dvh', background: '#000', color: '#fff',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '0 24px',
+    minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', padding: '0 24px',
     paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
   },
-  exit: { position: 'absolute', top: 'calc(env(safe-area-inset-top) + 16px)', right: 24, background: 'none', border: 'none', color: '#444', fontSize: 20, cursor: 'pointer' },
-  orangeBtn: { width: '100%', height: 64, borderRadius: 18, border: 'none', background: '#FF8C00', color: '#000', fontSize: 20, fontWeight: 700, cursor: 'pointer' },
-  skipBtn: { width: '100%', height: 52, borderRadius: 14, border: 'none', background: '#111', color: '#444', fontSize: 16, fontWeight: 600, cursor: 'pointer' },
+  exitBtn: {
+    position: 'absolute',
+    top: 'calc(env(safe-area-inset-top) + 16px)',
+    right: 24,
+    width: 36, height: 36, borderRadius: 18,
+    border: 'none', color: 'rgba(245,240,235,0.45)',
+    fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  stageInfo: { textAlign: 'center' },
+  stageIcon: { fontSize: 32 },
+  stageName: {
+    fontSize: 34, fontWeight: 700, color: '#f5f0eb',
+    margin: '6px 0 4px', letterSpacing: -0.5,
+  },
+  nextLabel: { color: 'rgba(245,240,235,0.4)', fontSize: 15, margin: 0 },
+  ringWrap: { display: 'flex', justifyContent: 'center' },
+  timeText: {
+    fontSize: 56, fontWeight: 700, color: '#f5f0eb',
+    fontVariantNumeric: 'tabular-nums', letterSpacing: -1,
+  },
+  remainLabel: { fontSize: 13, color: 'rgba(245,240,235,0.38)', marginTop: 2 },
+  dotsPill: {
+    display: 'flex', gap: 7, alignItems: 'center',
+    padding: '8px 16px', borderRadius: 999,
+  },
+  skipBtn: {
+    width: '100%', maxWidth: 320, height: 50,
+    borderRadius: 14,
+    color: 'rgba(245,240,235,0.5)', fontSize: 15, fontWeight: 600,
+    border: 'none',
+  },
+  donePage: {
+    minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'space-between',
+    padding: '60px 24px',
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 32px)',
+  },
+  doneContent: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 },
+  doneTitle: { fontSize: 36, fontWeight: 700, color: '#f5f0eb', margin: 0 },
+  doneOrange: { fontSize: 26, fontWeight: 600, color: '#FF8C00', margin: 0 },
+  doneSub: { fontSize: 15, color: 'rgba(245,240,235,0.4)', margin: 0 },
+  doneFooter: { width: '100%' },
 };
