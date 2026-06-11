@@ -1,0 +1,9 @@
+{
+  "name": "煎牛排计时器",
+  "short_name": "煎牛排",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait"
+}
