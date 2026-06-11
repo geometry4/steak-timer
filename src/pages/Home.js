@@ -1,44 +1,42 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useNavigate } from 'react-router-dom';
 import { CUTS } from '../data/presets';
-import '../index.css';
 export function Home() {
     const nav = useNavigate();
-    return (_jsxs("div", { style: s.page, children: [_jsxs("header", { className: "glass", style: s.topbar, children: [_jsx("span", { style: s.topbarEmoji, children: "\uD83E\uDD69" }), _jsx("span", { style: s.topbarTitle, children: "\u714E\u725B\u6392" })] }), _jsx("div", { style: s.hero, children: _jsx("p", { style: s.heroSub, children: "\u9009\u62E9\u4F60\u7684\u90E8\u4F4D\uFF0C\u5F00\u59CB\u7CBE\u51C6\u8BA1\u65F6" }) }), _jsx("div", { style: s.grid, children: CUTS.map(cut => (_jsxs("button", { className: "glass", style: s.card, onClick: () => nav(`/setup/${cut.id}`), children: [_jsx("span", { style: s.cardEmoji, children: cut.emoji }), _jsx("span", { style: s.cardName, children: cut.name }), _jsx("span", { style: s.cardEn, children: cut.nameEn }), _jsx("span", { style: s.cardDesc, children: cut.description })] }, cut.id))) }), _jsx("div", { style: { height: 'calc(env(safe-area-inset-bottom) + 24px)' } })] }));
+    return (_jsxs("div", { style: s.page, children: [_jsxs("header", { style: s.header, children: [_jsx("h1", { style: s.title, children: "\u714E\u725B\u6392" }), _jsx("p", { style: s.subtitle, children: "\u9009\u62E9\u90E8\u4F4D\u5F00\u59CB" })] }), _jsx("div", { style: s.grid, children: CUTS.map(cut => (_jsxs("button", { className: "glass", style: s.card, onClick: () => nav(`/setup/${cut.id}`), children: [_jsx("span", { style: s.cardEmoji, children: cut.emoji }), _jsx("span", { style: s.cardName, children: cut.name }), _jsx("span", { style: s.cardDesc, children: cut.description })] }, cut.id))) }), _jsx("div", { style: { height: 'calc(env(safe-area-inset-bottom) + 32px)' } })] }));
 }
 const s = {
     page: {
         minHeight: '100dvh',
-        display: 'flex', flexDirection: 'column',
-        padding: '0 16px',
-        paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
+        padding: '0 20px',
+        paddingTop: 'calc(env(safe-area-inset-top) + 28px)',
     },
-    topbar: {
-        borderRadius: 16,
-        padding: '12px 18px',
-        display: 'flex', alignItems: 'center', gap: 10,
-        marginBottom: 24,
-        flexShrink: 0,
+    header: { marginBottom: 28 },
+    title: {
+        fontSize: 34, fontWeight: 700, color: '#fff',
+        margin: 0, letterSpacing: -0.8,
     },
-    topbarEmoji: { fontSize: 24 },
-    topbarTitle: { fontSize: 18, fontWeight: 700, color: '#f5f0eb' },
-    hero: { marginBottom: 20 },
-    heroSub: { margin: 0, fontSize: 14, color: 'rgba(245,240,235,0.45)', fontWeight: 500 },
+    subtitle: {
+        fontSize: 15, color: 'rgba(235, 235, 245, 0.55)',
+        margin: '4px 0 0', fontWeight: 400, letterSpacing: -0.2,
+    },
     grid: {
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 10,
+        gap: 12,
     },
     card: {
-        border: 'none',
-        borderRadius: 18,
-        padding: '16px 12px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-        cursor: 'pointer', textAlign: 'center',
-        transition: 'transform 120ms',
+        padding: '22px 14px 18px',
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0,
+        textAlign: 'left', cursor: 'pointer',
     },
-    cardEmoji: { fontSize: 44, marginBottom: 6 },
-    cardName: { fontSize: 16, fontWeight: 700, color: '#f5f0eb' },
-    cardEn: { fontSize: 11, color: 'rgba(245,240,235,0.4)', fontWeight: 500 },
-    cardDesc: { fontSize: 11, color: 'rgba(245,240,235,0.35)', marginTop: 4, lineHeight: 1.4 },
+    cardEmoji: { fontSize: 32, lineHeight: 1, marginBottom: 12 },
+    cardName: {
+        fontSize: 17, fontWeight: 600, color: '#fff',
+        letterSpacing: -0.3, marginBottom: 4,
+    },
+    cardDesc: {
+        fontSize: 12, color: 'rgba(235, 235, 245, 0.5)',
+        lineHeight: 1.4, fontWeight: 400,
+    },
 };

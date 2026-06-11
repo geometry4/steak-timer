@@ -1,22 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { CUTS } from '../data/presets';
-import '../index.css';
 
 export function Home() {
   const nav = useNavigate();
 
   return (
     <div style={s.page}>
-      {/* Glass top bar */}
-      <header className="glass" style={s.topbar}>
-        <span style={s.topbarEmoji}>🥩</span>
-        <span style={s.topbarTitle}>煎牛排</span>
+      {/* Quiet header — no glass, just type */}
+      <header style={s.header}>
+        <h1 style={s.title}>煎牛排</h1>
+        <p style={s.subtitle}>选择部位开始</p>
       </header>
-
-      {/* Hero */}
-      <div style={s.hero}>
-        <p style={s.heroSub}>选择你的部位，开始精准计时</p>
-      </div>
 
       {/* Cut grid */}
       <div style={s.grid}>
@@ -29,13 +23,12 @@ export function Home() {
           >
             <span style={s.cardEmoji}>{cut.emoji}</span>
             <span style={s.cardName}>{cut.name}</span>
-            <span style={s.cardEn}>{cut.nameEn}</span>
             <span style={s.cardDesc}>{cut.description}</span>
           </button>
         ))}
       </div>
 
-      <div style={{ height: 'calc(env(safe-area-inset-bottom) + 24px)' }} />
+      <div style={{ height: 'calc(env(safe-area-inset-bottom) + 32px)' }} />
     </div>
   );
 }
@@ -43,36 +36,35 @@ export function Home() {
 const s: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100dvh',
-    display: 'flex', flexDirection: 'column',
-    padding: '0 16px',
-    paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
+    padding: '0 20px',
+    paddingTop: 'calc(env(safe-area-inset-top) + 28px)',
   },
-  topbar: {
-    borderRadius: 16,
-    padding: '12px 18px',
-    display: 'flex', alignItems: 'center', gap: 10,
-    marginBottom: 24,
-    flexShrink: 0,
+  header: { marginBottom: 28 },
+  title: {
+    fontSize: 34, fontWeight: 700, color: '#fff',
+    margin: 0, letterSpacing: -0.8,
   },
-  topbarEmoji: { fontSize: 24 },
-  topbarTitle: { fontSize: 18, fontWeight: 700, color: '#f5f0eb' },
-  hero: { marginBottom: 20 },
-  heroSub: { margin: 0, fontSize: 14, color: 'rgba(245,240,235,0.45)', fontWeight: 500 },
+  subtitle: {
+    fontSize: 15, color: 'rgba(235, 235, 245, 0.55)',
+    margin: '4px 0 0', fontWeight: 400, letterSpacing: -0.2,
+  },
   grid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 10,
+    gap: 12,
   },
   card: {
-    border: 'none',
-    borderRadius: 18,
-    padding: '16px 12px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-    cursor: 'pointer', textAlign: 'center',
-    transition: 'transform 120ms',
+    padding: '22px 14px 18px',
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0,
+    textAlign: 'left', cursor: 'pointer',
   },
-  cardEmoji: { fontSize: 44, marginBottom: 6 },
-  cardName: { fontSize: 16, fontWeight: 700, color: '#f5f0eb' },
-  cardEn: { fontSize: 11, color: 'rgba(245,240,235,0.4)', fontWeight: 500 },
-  cardDesc: { fontSize: 11, color: 'rgba(245,240,235,0.35)', marginTop: 4, lineHeight: 1.4 },
+  cardEmoji: { fontSize: 32, lineHeight: 1, marginBottom: 12 },
+  cardName: {
+    fontSize: 17, fontWeight: 600, color: '#fff',
+    letterSpacing: -0.3, marginBottom: 4,
+  },
+  cardDesc: {
+    fontSize: 12, color: 'rgba(235, 235, 245, 0.5)',
+    lineHeight: 1.4, fontWeight: 400,
+  },
 };
