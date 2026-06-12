@@ -11,14 +11,16 @@ import { DONENESS_LABELS } from '../types';
 const ICONS = {
     cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
 };
-function getAlert(endedType, nextStage) {
-    if (endedType === 'cook')
+function getAlert(endedStage, nextStage) {
+    // Steak-specific alerts based on standard labels
+    if (endedStage.label === '第一面')
         return '🔄 翻面！';
-    if (endedType === 'baste')
-        return '🍳 起锅，准备醒肉';
-    if (endedType === 'flip')
+    if (endedStage.label === '第二面')
         return nextStage?.type === 'baste' ? '🧈 开始 Baste！' : '🍳 起锅，准备醒肉';
-    return null;
+    if (endedStage.type === 'baste' && endedStage.label === '黄油 Baste')
+        return '🍳 起锅，准备醒肉';
+    // Generic: just announce the next stage name
+    return nextStage ? `⏱ ${nextStage.label}` : null;
 }
 function fmtTime(sec) {
     return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
@@ -108,8 +110,8 @@ export function Timer() {
             finish(stages);
             return;
         }
-        const endedType = stages[idxRef.current]?.type;
-        const alert = endedType ? getAlert(endedType, stages[next]) : null;
+        const endedStage = stages[idxRef.current];
+        const alert = endedStage ? getAlert(endedStage, stages[next]) : null;
         if (alert)
             showAlert(alert);
         if (playSound) {
