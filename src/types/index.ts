@@ -38,7 +38,6 @@ export interface Cut {
   emoji: string;
   description: string;
   presets: ThicknessPreset[];
-  hideDoneness?: boolean;   // for non-steak items where doneness doesn't apply
 }
 
 export interface CookingConfig {

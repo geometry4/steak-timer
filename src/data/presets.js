@@ -78,22 +78,6 @@ export const CUTS = [
         ],
     },
     {
-        id: 'lamb-soup', name: '羊肠汤', nameEn: 'Lamb Intestine Soup', emoji: '🍲',
-        description: '清炖慢煮，汤白肉嫩',
-        hideDoneness: true,
-        presets: [
-            {
-                id: uid(), thickness: 1,
-                stages: [
-                    stage('cook', '大火煮沸', 1200), // 20 min — 下锅煮沸，撇去浮沫
-                    stage('flip', '小火慢炖', 4500), // 75 min — 转小火慢炖至软烂
-                    stage('baste', '加调料', 300, true), //  5 min — 加盐、胡椒、香菜（可选）
-                    stage('rest', '收汁焖煮', 600), // 10 min — 大火收汁，出锅前调整口味
-                ],
-            },
-        ],
-    },
-    {
         id: 'chuck-roll', name: '上脑', nameEn: 'Chuck Roll', emoji: '💪',
         description: '肌间脂肪多，煎后焦香，价格亲民',
         presets: [

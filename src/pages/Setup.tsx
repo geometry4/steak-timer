@@ -153,52 +153,48 @@ export function Setup() {
       </header>
 
       <div style={s.scroll}>
-        {/* Thickness — hidden when only one preset */}
-        {cut.presets.length > 1 && (
-          <section>
-            <p className="sec-label">厚度</p>
-            <div ref={segRef} className="liquid-seg glass" style={{ borderRadius: 14 }}>
-              <div ref={indRef} className="seg-indicator" />
-              {cut.presets.map((p, i) => (
-                <button
-                  key={p.id}
-                  className={i === presetIdx ? 'active' : ''}
-                  onClick={() => selectPreset(i)}
-                >
-                  {p.thickness}cm
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Thickness */}
+        <section>
+          <p className="sec-label">厚度</p>
+          <div ref={segRef} className="liquid-seg glass" style={{ borderRadius: 14 }}>
+            <div ref={indRef} className="seg-indicator" />
+            {cut.presets.map((p, i) => (
+              <button
+                key={p.id}
+                className={i === presetIdx ? 'active' : ''}
+                onClick={() => selectPreset(i)}
+              >
+                {p.thickness}cm
+              </button>
+            ))}
+          </div>
+        </section>
 
-        {/* Doneness — hidden for non-steak items */}
-        {!cut.hideDoneness && (
-          <section>
-            <p className="sec-label">熟度</p>
-            <div style={s.donenessRow}>
-              {DONENESS_LIST.map(d => (
-                <button
-                  key={d}
-                  className={d === doneness ? 'glass' : 'glass-pill'}
-                  style={{
-                    ...s.donenessBtn,
-                    ...(d === doneness ? s.donenessBtnActive : {}),
-                  }}
-                  onClick={() => selectDoneness(d)}
-                >
-                  <span style={s.donenessName}>{DONENESS_LABELS[d]}</span>
-                  <span style={{
-                    ...s.donenessTemp,
-                    color: d === doneness ? 'rgba(255,149,0,0.9)' : 'rgba(235,235,245,0.35)',
-                  }}>
-                    {DONENESS_TEMP[d]}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Doneness — with temperature reference */}
+        <section>
+          <p className="sec-label">熟度</p>
+          <div style={s.donenessRow}>
+            {DONENESS_LIST.map(d => (
+              <button
+                key={d}
+                className={d === doneness ? 'glass' : 'glass-pill'}
+                style={{
+                  ...s.donenessBtn,
+                  ...(d === doneness ? s.donenessBtnActive : {}),
+                }}
+                onClick={() => selectDoneness(d)}
+              >
+                <span style={s.donenessName}>{DONENESS_LABELS[d]}</span>
+                <span style={{
+                  ...s.donenessTemp,
+                  color: d === doneness ? 'rgba(255,149,0,0.9)' : 'rgba(235,235,245,0.35)',
+                }}>
+                  {DONENESS_TEMP[d]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         {/* Butter baste */}
         <section>
