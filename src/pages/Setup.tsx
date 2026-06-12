@@ -12,6 +12,12 @@ const ICONS: Record<Stage['type'], string> = {
 
 const DONENESS_LIST: Doneness[] = ['rare', 'medium-rare', 'medium', 'well-done'];
 
+const CHECKLIST = [
+  { emoji: '🌡️', text: '牛排已回温至室温（约 30 分钟）' },
+  { emoji: '🔥', text: '锅已充分预热，滴水会立刻蒸发' },
+  { emoji: '🧻', text: '牛排表面已用厨房纸擦干' },
+];
+
 function applyDoneness(stages: Stage[], mult: number): Stage[] {
   return stages.map(s =>
     (s.type === 'cook' || s.type === 'flip')
@@ -29,6 +35,8 @@ export function Setup() {
   const [doneness, setDoneness]     = useState<Doneness>('medium-rare');
   const [stages, setStages]         = useState<Stage[]>(() => buildStages(0, 'medium-rare'));
   const [useBaste, setUseBaste]     = useState(true);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [checked, setChecked]       = useState([false, false, false]);
   const [editIdx, setEditIdx]       = useState<number | null>(null);
   const [picMin, setPicMin]         = useState(0);
   const [picSec, setPicSec]         = useState(0);
@@ -99,8 +107,14 @@ export function Setup() {
     setEditIdx(null);
   }
 
+  function openChecklist() {
+    setChecked([false, false, false]);
+    setShowChecklist(true);
+  }
+
   function start() {
     initAudio();
+    setShowChecklist(false);
     const active = useBaste ? stages : stages.filter(st => st.type !== 'baste');
     const config: CookingConfig = {
       cutName: cut!.name,
@@ -109,6 +123,10 @@ export function Setup() {
     };
     sessionStorage.setItem('cookingConfig', JSON.stringify(config));
     nav('/timer');
+  }
+
+  function toggleCheck(i: number) {
+    setChecked(prev => prev.map((v, idx) => idx === i ? !v : v));
   }
 
   if (!cut) return null;
@@ -199,8 +217,40 @@ export function Setup() {
       </div>
 
       <div style={s.footer}>
-        <button className="btn-primary" onClick={start}>开始计时</button>
+        <button className="btn-primary" onClick={openChecklist}>开始计时</button>
       </div>
+
+      {/* Pre-cooking checklist */}
+      {showChecklist && (
+        <div className="sheet-backdrop" onClick={() => setShowChecklist(false)}>
+          <div className="glass sheet" onClick={e => e.stopPropagation()}>
+            <p style={{ ...s.sheetTitle, marginBottom: 8 }}>准备好了吗？</p>
+            <p style={s.checklistNote}>勾选提醒，勾完更放心（也可以直接开始）</p>
+            <div style={s.checklistItems}>
+              {CHECKLIST.map((item, i) => (
+                <button key={i} style={s.checkItem} onClick={() => toggleCheck(i)}>
+                  <span style={{ fontSize: 22 }}>{item.emoji}</span>
+                  <span style={{ ...s.checkItemText, color: checked[i] ? '#fff' : 'rgba(235,235,245,0.6)' }}>
+                    {item.text}
+                  </span>
+                  <span style={{
+                    width: 24, height: 24, borderRadius: 12, flexShrink: 0,
+                    border: `2px solid ${checked[i] ? '#FF9500' : 'rgba(235,235,245,0.25)'}`,
+                    background: checked[i] ? '#FF9500' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, color: '#000', transition: 'all 200ms',
+                  }}>
+                    {checked[i] ? '✓' : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button className="btn-primary" style={{ marginTop: 20 }} onClick={start}>
+              {checked.every(Boolean) ? '✅ 开始计时！' : '直接开始'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {editIdx !== null && (
         <div className="sheet-backdrop" onClick={() => setEditIdx(null)}>
@@ -296,5 +346,19 @@ const s: Record<string, React.CSSProperties> = {
   cancelBtn: {
     flex: 1, height: 48, borderRadius: 14, border: 'none',
     background: 'rgba(255,255,255,0.10)', color: '#fff', fontSize: 16, fontWeight: 500,
+  },
+  checklistNote: {
+    fontSize: 12, color: 'rgba(235,235,245,0.4)',
+    textAlign: 'center', margin: '0 0 20px',
+  },
+  checklistItems: { display: 'flex', flexDirection: 'column', gap: 8 },
+  checkItem: {
+    display: 'flex', alignItems: 'center', gap: 12,
+    background: 'rgba(255,255,255,0.06)', border: 'none',
+    borderRadius: 14, padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
+  },
+  checkItemText: {
+    flex: 1, fontSize: 14, fontWeight: 500, lineHeight: 1.4,
+    transition: 'color 200ms',
   },
 };
