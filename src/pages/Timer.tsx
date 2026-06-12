@@ -9,11 +9,15 @@ const ICONS: Record<Stage['type'], string> = {
   cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
 };
 
-const STAGE_ALERTS: Partial<Record<Stage['type'], string>> = {
-  cook:  '🔄 翻面！',
-  flip:  '🧈 开始 Baste！',
-  baste: '🍳 起锅，准备醒肉',
-};
+function getAlert(endedType: Stage['type'], nextStage: Stage | undefined): string | null {
+  if (endedType === 'cook')  return '🔄 翻面！';
+  if (endedType === 'baste') return '🍳 起锅，准备醒肉';
+  if (endedType === 'flip') {
+    // Only show baste alert if the next stage is actually baste
+    return nextStage?.type === 'baste' ? '🧈 开始 Baste！' : '🍳 起锅，准备醒肉';
+  }
+  return null;
+}
 
 export function Timer() {
   const nav = useNavigate();
@@ -50,7 +54,8 @@ export function Timer() {
   const advanceTo = useCallback((next: number, stages: Stage[]) => {
     if (next >= stages.length) { finish(); return; }
     const endedType = stages[idxRef.current]?.type;
-    if (endedType && STAGE_ALERTS[endedType]) showAlert(STAGE_ALERTS[endedType]!);
+    const alert = endedType ? getAlert(endedType, stages[next]) : null;
+    if (alert) showAlert(alert);
     idxRef.current   = next;
     startRef.current = Date.now();
     durRef.current   = stages[next].duration;
