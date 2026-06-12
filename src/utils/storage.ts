@@ -1,4 +1,21 @@
-import type { Doneness, Stage } from '../types';
+import type { Doneness, HistoryEntry, Stage } from '../types';
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+const HISTORY_KEY = 'cookingHistory_v1';
+const MAX_HISTORY = 20;
+
+export function loadHistory(): HistoryEntry[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+
+export function saveHistory(entry: HistoryEntry) {
+  const list = loadHistory();
+  list.unshift(entry);
+  if (list.length > MAX_HISTORY) list.length = MAX_HISTORY;
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch {}
+}
 
 // Custom durations keyed by: cutId → "${thickness}_${doneness}" → stageType → seconds
 type Store = Record<string, Record<string, Partial<Record<Stage['type'], number>>>>;

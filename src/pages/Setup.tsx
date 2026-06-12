@@ -12,11 +12,12 @@ const ICONS: Record<Stage['type'], string> = {
 
 const DONENESS_LIST: Doneness[] = ['rare', 'medium-rare', 'medium', 'well-done'];
 
-const CHECKLIST = [
-  { emoji: '🌡️', text: '牛排已回温至室温（约 30 分钟）' },
-  { emoji: '🔥', text: '锅已充分预热，滴水会立刻蒸发' },
-  { emoji: '🧻', text: '牛排表面已用厨房纸擦干' },
-];
+const DONENESS_TEMP: Record<Doneness, string> = {
+  'rare':        '52°C',
+  'medium-rare': '57°C',
+  'medium':      '63°C',
+  'well-done':   '71°C+',
+};
 
 function applyDoneness(stages: Stage[], mult: number): Stage[] {
   return stages.map(s =>
@@ -31,23 +32,23 @@ export function Setup() {
   const nav = useNavigate();
   const cut = getCut(cutId!);
 
-  const [presetIdx, setPresetIdx]   = useState(0);
-  const [doneness, setDoneness]     = useState<Doneness>('medium-rare');
-  const [stages, setStages]         = useState<Stage[]>(() => buildStages(0, 'medium-rare'));
-  const [useBaste, setUseBaste]     = useState(true);
-  const [showChecklist, setShowChecklist] = useState(false);
-  const [checked, setChecked]       = useState([false, false, false]);
-  const [editIdx, setEditIdx]       = useState<number | null>(null);
-  const [picMin, setPicMin]         = useState(0);
-  const [picSec, setPicSec]         = useState(0);
+  const [presetIdx, setPresetIdx] = useState(0);
+  const [doneness, setDoneness]   = useState<Doneness>('medium-rare');
+  const [stages, setStages]       = useState<Stage[]>(() => buildStages(0, 'medium-rare'));
+  const [useBaste, setUseBaste]   = useState(true);
+  const [editIdx, setEditIdx]     = useState<number | null>(null);
+  const [picMin, setPicMin]       = useState(0);
+  const [picSec, setPicSec]       = useState(0);
 
   const segRef = useRef<HTMLDivElement>(null);
   const indRef = useRef<HTMLDivElement>(null);
 
   function buildStages(idx: number, don: Doneness): Stage[] {
     const base = JSON.parse(JSON.stringify(cut!.presets[idx].stages)) as Stage[];
-    const withDoneness = applyDoneness(base, DONENESS_MULT[don]);
-    return applyCustomDurations(withDoneness, cut!.id, cut!.presets[idx].thickness, don);
+    return applyCustomDurations(
+      applyDoneness(base, DONENESS_MULT[don]),
+      cut!.id, cut!.presets[idx].thickness, don,
+    );
   }
 
   function moveIndicator(idx: number, animate: boolean) {
@@ -107,26 +108,17 @@ export function Setup() {
     setEditIdx(null);
   }
 
-  function openChecklist() {
-    setChecked([false, false, false]);
-    setShowChecklist(true);
-  }
-
   function start() {
     initAudio();
-    setShowChecklist(false);
     const active = useBaste ? stages : stages.filter(st => st.type !== 'baste');
     const config: CookingConfig = {
       cutName: cut!.name,
       thickness: cut!.presets[presetIdx].thickness,
+      doneness,
       stages: active,
     };
     sessionStorage.setItem('cookingConfig', JSON.stringify(config));
     nav('/timer');
-  }
-
-  function toggleCheck(i: number) {
-    setChecked(prev => prev.map((v, idx) => idx === i ? !v : v));
   }
 
   if (!cut) return null;
@@ -160,7 +152,7 @@ export function Setup() {
           </div>
         </section>
 
-        {/* Doneness */}
+        {/* Doneness — with temperature reference */}
         <section>
           <p className="sec-label">熟度</p>
           <div style={s.donenessRow}>
@@ -174,7 +166,13 @@ export function Setup() {
                 }}
                 onClick={() => selectDoneness(d)}
               >
-                {DONENESS_LABELS[d]}
+                <span style={s.donenessName}>{DONENESS_LABELS[d]}</span>
+                <span style={{
+                  ...s.donenessTemp,
+                  color: d === doneness ? 'rgba(255,149,0,0.9)' : 'rgba(235,235,245,0.35)',
+                }}>
+                  {DONENESS_TEMP[d]}
+                </span>
               </button>
             ))}
           </div>
@@ -197,15 +195,15 @@ export function Setup() {
 
         {/* Stage list */}
         <section>
-          <p className="sec-label">阶段时间</p>
+          <p className="sec-label">阶段时间 · 点击可修改</p>
           <div className="glass" style={s.stageList}>
             {visible.map((stage, i) => (
               <div key={stage.id}>
                 <button style={s.stageRow} onClick={() => openEdit(stages.indexOf(stage))}>
                   <span style={{ fontSize: 18, width: 26 }}>{ICONS[stage.type]}</span>
                   <span style={s.stageName}>{stage.label}</span>
-                  <span style={s.durationLabel}>{fmt(stage.duration)}</span>
-                  <span style={s.chevron}>›</span>
+                  {/* Chip-style duration makes it obvious it's editable */}
+                  <span style={s.durationChip}>{fmt(stage.duration)}</span>
                 </button>
                 {i < visible.length - 1 && <div className="divider" />}
               </div>
@@ -217,41 +215,10 @@ export function Setup() {
       </div>
 
       <div style={s.footer}>
-        <button className="btn-primary" onClick={openChecklist}>开始计时</button>
+        <button className="btn-primary" onClick={start}>开始计时</button>
       </div>
 
-      {/* Pre-cooking checklist */}
-      {showChecklist && (
-        <div className="sheet-backdrop" onClick={() => setShowChecklist(false)}>
-          <div className="glass sheet" onClick={e => e.stopPropagation()}>
-            <p style={{ ...s.sheetTitle, marginBottom: 8 }}>准备好了吗？</p>
-            <p style={s.checklistNote}>勾选提醒，勾完更放心（也可以直接开始）</p>
-            <div style={s.checklistItems}>
-              {CHECKLIST.map((item, i) => (
-                <button key={i} style={s.checkItem} onClick={() => toggleCheck(i)}>
-                  <span style={{ fontSize: 22 }}>{item.emoji}</span>
-                  <span style={{ ...s.checkItemText, color: checked[i] ? '#fff' : 'rgba(235,235,245,0.6)' }}>
-                    {item.text}
-                  </span>
-                  <span style={{
-                    width: 24, height: 24, borderRadius: 12, flexShrink: 0,
-                    border: `2px solid ${checked[i] ? '#FF9500' : 'rgba(235,235,245,0.25)'}`,
-                    background: checked[i] ? '#FF9500' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, color: '#000', transition: 'all 200ms',
-                  }}>
-                    {checked[i] ? '✓' : ''}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <button className="btn-primary" style={{ marginTop: 20 }} onClick={start}>
-              {checked.every(Boolean) ? '✅ 开始计时！' : '直接开始'}
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* Duration editor */}
       {editIdx !== null && (
         <div className="sheet-backdrop" onClick={() => setEditIdx(null)}>
           <div className="glass sheet" onClick={e => e.stopPropagation()}>
@@ -298,31 +265,29 @@ function fmt(sec: number) {
 const s: Record<string, React.CSSProperties> = {
   page: {
     height: '100dvh', display: 'flex', flexDirection: 'column',
-    padding: '0 20px',
-    paddingTop: 'calc(env(safe-area-inset-top) + 14px)',
+    padding: '0 20px', paddingTop: 'calc(env(safe-area-inset-top) + 14px)',
     overflow: 'hidden',
   },
-  header: {
-    display: 'flex', alignItems: 'center', gap: 14,
-    marginBottom: 18, flexShrink: 0,
-  },
+  header: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18, flexShrink: 0 },
   backBtn: {
     width: 38, height: 38, display: 'flex', alignItems: 'center',
-    justifyContent: 'center', color: '#fff', fontSize: 18,
-    fontWeight: 500, lineHeight: 1, border: 'none',
+    justifyContent: 'center', color: '#fff', fontSize: 18, fontWeight: 500, lineHeight: 1, border: 'none',
   },
-  title: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: -0.5 },
+  title:    { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: -0.5 },
   subtitle: { fontSize: 12, color: 'rgba(235,235,245,0.5)', margin: '2px 0 0' },
-  scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 14, overflow: 'hidden' },
+  scroll:   { flex: 1, display: 'flex', flexDirection: 'column', gap: 14, overflow: 'hidden' },
   donenessRow: { display: 'flex', gap: 8 },
   donenessBtn: {
-    flex: 1, height: 40, border: 'none', borderRadius: 10,
-    fontSize: 13, fontWeight: 600, color: 'rgba(235,235,245,0.55)', cursor: 'pointer',
+    flex: 1, height: 52, border: 'none', borderRadius: 12,
+    cursor: 'pointer', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: 2,
   },
-  donenessBtnActive: { color: '#fff' },
-  row: { padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 },
+  donenessBtnActive: {},
+  donenessName: { fontSize: 13, fontWeight: 600, color: '#fff' },
+  donenessTemp: { fontSize: 11, fontWeight: 500, transition: 'color 200ms' },
+  row:      { padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 },
   rowTitle: { fontSize: 15, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
-  rowSub: { fontSize: 12, color: 'rgba(235,235,245,0.5)', marginTop: 2 },
+  rowSub:   { fontSize: 12, color: 'rgba(235,235,245,0.5)', marginTop: 2 },
   stageList: { overflow: 'hidden' },
   stageRow: {
     width: '100%', background: 'none', border: 'none',
@@ -330,35 +295,19 @@ const s: Record<string, React.CSSProperties> = {
     color: '#fff', textAlign: 'left', cursor: 'pointer',
   },
   stageName: { flex: 1, fontSize: 15, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
-  durationLabel: { fontSize: 14, color: 'rgba(235,235,245,0.55)' },
-  chevron: { fontSize: 18, color: 'rgba(235,235,245,0.3)', marginLeft: 4 },
-  footer: {
-    padding: '10px 0',
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 14px)',
-    flexShrink: 0,
+  // Chip style makes it obvious the time is tappable/editable
+  durationChip: {
+    fontSize: 13, fontWeight: 600, color: '#FF9500',
+    background: 'rgba(255,149,0,0.12)',
+    border: '1px solid rgba(255,149,0,0.25)',
+    borderRadius: 8, padding: '3px 10px',
   },
-  sheetTitle: {
-    fontSize: 16, fontWeight: 600, color: '#fff',
-    textAlign: 'center', margin: '0 0 24px', letterSpacing: -0.2,
-  },
-  steppers: { display: 'flex', justifyContent: 'space-around', marginBottom: 24 },
-  sheetBtns: { display: 'flex', gap: 10 },
+  footer:   { padding: '10px 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 14px)', flexShrink: 0 },
+  sheetTitle: { fontSize: 16, fontWeight: 600, color: '#fff', textAlign: 'center', margin: '0 0 24px' },
+  steppers:   { display: 'flex', justifyContent: 'space-around', marginBottom: 24 },
+  sheetBtns:  { display: 'flex', gap: 10 },
   cancelBtn: {
     flex: 1, height: 48, borderRadius: 14, border: 'none',
     background: 'rgba(255,255,255,0.10)', color: '#fff', fontSize: 16, fontWeight: 500,
-  },
-  checklistNote: {
-    fontSize: 12, color: 'rgba(235,235,245,0.4)',
-    textAlign: 'center', margin: '0 0 20px',
-  },
-  checklistItems: { display: 'flex', flexDirection: 'column', gap: 8 },
-  checkItem: {
-    display: 'flex', alignItems: 'center', gap: 12,
-    background: 'rgba(255,255,255,0.06)', border: 'none',
-    borderRadius: 14, padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
-  },
-  checkItemText: {
-    flex: 1, fontSize: 14, fontWeight: 500, lineHeight: 1.4,
-    transition: 'color 200ms',
   },
 };

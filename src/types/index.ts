@@ -43,5 +43,15 @@ export interface Cut {
 export interface CookingConfig {
   cutName: string;
   thickness: number;
+  doneness: Doneness;
   stages: Stage[];
+}
+
+export interface HistoryEntry {
+  id: string;
+  date: number;
+  cutName: string;
+  thickness: number;
+  doneness: Doneness;
+  totalSeconds: number;
 }
