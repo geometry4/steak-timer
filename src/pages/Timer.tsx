@@ -311,7 +311,7 @@ export function Timer() {
             <p style={s.confirmSub}>当前进度不会保存</p>
             <div style={s.confirmBtns}>
               <button className="glass-pill" style={s.confirmCancelBtn} onClick={cancelExit}>继续计时</button>
-              <button style={s.confirmExitBtn} onClick={confirmExit}>退出</button>
+              <button className="glass-pill" style={s.confirmExitBtn} onClick={confirmExit}>退出</button>
             </div>
           </div>
         </div>
@@ -356,6 +356,6 @@ const s: Record<string, React.CSSProperties> = {
   confirmTitle:     { fontSize: 20, fontWeight: 700, color: '#fff', margin: '0 0 6px', textAlign: 'center', letterSpacing: -0.4 },
   confirmSub:       { fontSize: 14, color: 'rgba(235,235,245,0.5)', margin: '0 0 24px', textAlign: 'center' },
   confirmBtns:      { display: 'flex', gap: 10 },
-  confirmCancelBtn: { flex: 1, height: 50, border: 'none', fontSize: 15, fontWeight: 600, color: '#fff', borderRadius: 14 },
-  confirmExitBtn:   { flex: 1, height: 50, border: 'none', fontSize: 15, fontWeight: 600, color: '#ff453a', background: 'rgba(255,69,58,0.12)', borderRadius: 14, cursor: 'pointer' },
+  confirmCancelBtn: { flex: 1, height: 50, border: 'none', fontSize: 15, fontWeight: 600, color: '#fff' },
+  confirmExitBtn:   { flex: 1, height: 50, border: 'none', fontSize: 15, fontWeight: 600, color: '#ff453a' },
 };
