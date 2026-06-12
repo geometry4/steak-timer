@@ -1,11 +1,9 @@
-import type { Stage } from '../types';
+import type { Doneness, Stage } from '../types';
 
-// Custom durations keyed by: cutId → thicknessValue → stageType → seconds
-// Keying by thickness value (not index) so the storage stays valid when we
-// add/remove preset thicknesses in the future.
+// Custom durations keyed by: cutId → "${thickness}_${doneness}" → stageType → seconds
 type Store = Record<string, Record<string, Partial<Record<Stage['type'], number>>>>;
 
-const KEY = 'customStages_v2';
+const KEY = 'customStages_v3';
 
 function load(): Store {
   try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
@@ -16,20 +14,27 @@ function save(store: Store) {
   try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {}
 }
 
-export function applyCustomDurations(stages: Stage[], cutId: string, thickness: number): Stage[] {
-  const custom = load()[cutId]?.[String(thickness)] || {};
+function slotKey(thickness: number, doneness: Doneness) {
+  return `${thickness}_${doneness}`;
+}
+
+export function applyCustomDurations(
+  stages: Stage[], cutId: string, thickness: number, doneness: Doneness,
+): Stage[] {
+  const custom = load()[cutId]?.[slotKey(thickness, doneness)] || {};
   return stages.map(s =>
     custom[s.type] != null ? { ...s, duration: custom[s.type]! } : s
   );
 }
 
 export function saveStageDuration(
-  cutId: string, thickness: number, type: Stage['type'], duration: number,
+  cutId: string, thickness: number, doneness: Doneness,
+  type: Stage['type'], duration: number,
 ) {
   const store = load();
   if (!store[cutId]) store[cutId] = {};
-  const key = String(thickness);
-  if (!store[cutId][key]) store[cutId][key] = {};
-  store[cutId][key][type] = duration;
+  const k = slotKey(thickness, doneness);
+  if (!store[cutId][k]) store[cutId][k] = {};
+  store[cutId][k][type] = duration;
   save(store);
 }

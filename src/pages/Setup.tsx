@@ -3,31 +3,44 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
 import { applyCustomDurations, saveStageDuration } from '../utils/storage';
-import type { Stage, CookingConfig } from '../types';
+import type { Stage, CookingConfig, Doneness } from '../types';
+import { DONENESS_LABELS, DONENESS_MULT } from '../types';
 
 const ICONS: Record<Stage['type'], string> = {
   cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
 };
+
+const DONENESS_LIST: Doneness[] = ['rare', 'medium-rare', 'medium', 'well-done'];
+
+function applyDoneness(stages: Stage[], mult: number): Stage[] {
+  return stages.map(s =>
+    (s.type === 'cook' || s.type === 'flip')
+      ? { ...s, duration: Math.round(s.duration * mult / 5) * 5 }
+      : s
+  );
+}
 
 export function Setup() {
   const { cutId } = useParams<{ cutId: string }>();
   const nav = useNavigate();
   const cut = getCut(cutId!);
 
-  const [presetIdx, setPresetIdx] = useState(0);
-  const [stages, setStages] = useState<Stage[]>(() =>
-    applyCustomDurations(
-      JSON.parse(JSON.stringify(cut!.presets[0].stages)),
-      cut!.id, cut!.presets[0].thickness,
-    )
-  );
-  const [useBaste, setUseBaste] = useState(true);
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [picMin, setPicMin] = useState(0);
-  const [picSec, setPicSec] = useState(0);
+  const [presetIdx, setPresetIdx]   = useState(0);
+  const [doneness, setDoneness]     = useState<Doneness>('medium-rare');
+  const [stages, setStages]         = useState<Stage[]>(() => buildStages(0, 'medium-rare'));
+  const [useBaste, setUseBaste]     = useState(true);
+  const [editIdx, setEditIdx]       = useState<number | null>(null);
+  const [picMin, setPicMin]         = useState(0);
+  const [picSec, setPicSec]         = useState(0);
 
   const segRef = useRef<HTMLDivElement>(null);
   const indRef = useRef<HTMLDivElement>(null);
+
+  function buildStages(idx: number, don: Doneness): Stage[] {
+    const base = JSON.parse(JSON.stringify(cut!.presets[idx].stages)) as Stage[];
+    const withDoneness = applyDoneness(base, DONENESS_MULT[don]);
+    return applyCustomDurations(withDoneness, cut!.id, cut!.presets[idx].thickness, don);
+  }
 
   function moveIndicator(idx: number, animate: boolean) {
     const seg = segRef.current, ind = indRef.current;
@@ -39,7 +52,6 @@ export function Setup() {
     const br = btn.getBoundingClientRect();
     const x = br.left - cr.left;
     const w = br.width;
-
     if (!animate) {
       ind.style.transition = 'none';
       ind.style.setProperty('--ind-x', `${x}px`);
@@ -60,11 +72,13 @@ export function Setup() {
 
   function selectPreset(i: number) {
     setPresetIdx(i);
-    setStages(applyCustomDurations(
-      JSON.parse(JSON.stringify(cut!.presets[i].stages)),
-      cut!.id, cut!.presets[i].thickness,
-    ));
+    setStages(buildStages(i, doneness));
     moveIndicator(i, true);
+  }
+
+  function selectDoneness(d: Doneness) {
+    setDoneness(d);
+    setStages(buildStages(presetIdx, d));
   }
 
   function openEdit(idx: number) {
@@ -81,7 +95,7 @@ export function Setup() {
     setStages(prev => prev.map((st, i) =>
       i === editIdx ? { ...st, duration: newDur } : st
     ));
-    saveStageDuration(cut!.id, cut!.presets[presetIdx].thickness, editedType, newDur);
+    saveStageDuration(cut!.id, cut!.presets[presetIdx].thickness, doneness, editedType, newDur);
     setEditIdx(null);
   }
 
@@ -111,6 +125,7 @@ export function Setup() {
       </header>
 
       <div style={s.scroll}>
+        {/* Thickness */}
         <section>
           <p className="sec-label">厚度</p>
           <div ref={segRef} className="liquid-seg glass" style={{ borderRadius: 14 }}>
@@ -127,6 +142,27 @@ export function Setup() {
           </div>
         </section>
 
+        {/* Doneness */}
+        <section>
+          <p className="sec-label">熟度</p>
+          <div style={s.donenessRow}>
+            {DONENESS_LIST.map(d => (
+              <button
+                key={d}
+                className={d === doneness ? 'glass' : 'glass-pill'}
+                style={{
+                  ...s.donenessBtn,
+                  ...(d === doneness ? s.donenessBtnActive : {}),
+                }}
+                onClick={() => selectDoneness(d)}
+              >
+                {DONENESS_LABELS[d]}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Butter baste */}
         <section>
           <div className="glass" style={s.row}>
             <div style={{ flex: 1 }}>
@@ -141,6 +177,7 @@ export function Setup() {
           </div>
         </section>
 
+        {/* Stage list */}
         <section>
           <p className="sec-label">阶段时间</p>
           <div className="glass" style={s.stageList}>
@@ -190,12 +227,8 @@ function Stepper({ label, value, min, max, step = 1, onChange, wrap = false }: {
   label: string; value: number; min: number; max: number; step?: number;
   onChange: (v: number) => void; wrap?: boolean;
 }) {
-  const next = value + step > max
-    ? (wrap ? min : max)
-    : value + step;
-  const prev = value - step < min
-    ? (wrap ? max : min)
-    : value - step;
+  const next = value + step > max ? (wrap ? min : max) : value + step;
+  const prev = value - step < min ? (wrap ? max : min) : value - step;
   return (
     <div className="stepper">
       <button className="stepper-btn" onClick={() => onChange(next)}>＋</button>
@@ -216,39 +249,42 @@ const s: Record<string, React.CSSProperties> = {
   page: {
     height: '100dvh', display: 'flex', flexDirection: 'column',
     padding: '0 20px',
-    paddingTop: 'calc(env(safe-area-inset-top) + 16px)',
+    paddingTop: 'calc(env(safe-area-inset-top) + 14px)',
     overflow: 'hidden',
   },
   header: {
     display: 'flex', alignItems: 'center', gap: 14,
-    marginBottom: 28, flexShrink: 0,
+    marginBottom: 18, flexShrink: 0,
   },
   backBtn: {
-    width: 38, height: 38,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', fontSize: 18, fontWeight: 500, lineHeight: 1, border: 'none',
+    width: 38, height: 38, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', color: '#fff', fontSize: 18,
+    fontWeight: 500, lineHeight: 1, border: 'none',
   },
-  title: { fontSize: 22, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: -0.5 },
-  subtitle: {
-    fontSize: 13, color: 'rgba(235, 235, 245, 0.5)',
-    margin: '2px 0 0', fontWeight: 400, letterSpacing: -0.1,
+  title: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: -0.5 },
+  subtitle: { fontSize: 12, color: 'rgba(235,235,245,0.5)', margin: '2px 0 0' },
+  scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 14, overflow: 'hidden' },
+  donenessRow: { display: 'flex', gap: 8 },
+  donenessBtn: {
+    flex: 1, height: 40, border: 'none', borderRadius: 10,
+    fontSize: 13, fontWeight: 600, color: 'rgba(235,235,245,0.55)', cursor: 'pointer',
   },
-  scroll: { flex: 1, display: 'flex', flexDirection: 'column', gap: 18, overflow: 'hidden' },
-  row: { padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 },
-  rowTitle: { fontSize: 16, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
-  rowSub: { fontSize: 13, color: 'rgba(235, 235, 245, 0.5)', marginTop: 2, fontWeight: 400 },
+  donenessBtnActive: { color: '#fff' },
+  row: { padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 },
+  rowTitle: { fontSize: 15, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
+  rowSub: { fontSize: 12, color: 'rgba(235,235,245,0.5)', marginTop: 2 },
   stageList: { overflow: 'hidden' },
   stageRow: {
     width: '100%', background: 'none', border: 'none',
-    display: 'flex', alignItems: 'center', padding: '14px 18px', gap: 12,
+    display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 12,
     color: '#fff', textAlign: 'left', cursor: 'pointer',
   },
-  stageName: { flex: 1, fontSize: 16, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
-  durationLabel: { fontSize: 15, fontWeight: 400, color: 'rgba(235, 235, 245, 0.55)', letterSpacing: -0.2 },
-  chevron: { fontSize: 18, color: 'rgba(235, 235, 245, 0.3)', marginLeft: 4 },
+  stageName: { flex: 1, fontSize: 15, fontWeight: 500, color: '#fff', letterSpacing: -0.2 },
+  durationLabel: { fontSize: 14, color: 'rgba(235,235,245,0.55)' },
+  chevron: { fontSize: 18, color: 'rgba(235,235,245,0.3)', marginLeft: 4 },
   footer: {
-    padding: '12px 0',
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+    padding: '10px 0',
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 14px)',
     flexShrink: 0,
   },
   sheetTitle: {
@@ -259,7 +295,6 @@ const s: Record<string, React.CSSProperties> = {
   sheetBtns: { display: 'flex', gap: 10 },
   cancelBtn: {
     flex: 1, height: 48, borderRadius: 14, border: 'none',
-    background: 'rgba(255, 255, 255, 0.10)',
-    color: '#fff', fontSize: 16, fontWeight: 500,
+    background: 'rgba(255,255,255,0.10)', color: '#fff', fontSize: 16, fontWeight: 500,
   },
 };

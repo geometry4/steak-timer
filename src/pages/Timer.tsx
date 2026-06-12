@@ -2,10 +2,18 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CountdownRing } from '../components/CountdownRing';
 import { playAlarm } from '../utils/audio';
+import { acquireWakeLock, releaseWakeLock } from '../utils/wakeLock';
 import type { CookingConfig, Stage } from '../types';
 
 const ICONS: Record<Stage['type'], string> = {
   cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
+};
+
+// Text shown in the full-screen alert when a stage ends
+const STAGE_ALERTS: Partial<Record<Stage['type'], string>> = {
+  cook:  '🔄 翻面！',
+  flip:  '🧈 开始 Baste！',
+  baste: '🍳 起锅，准备醒肉',
 };
 
 export function Timer() {
@@ -17,27 +25,43 @@ export function Timer() {
   const [stageIdx, setStageIdx] = useState(0);
   const [remaining, setRemaining] = useState(config?.stages[0]?.duration ?? 0);
   const [done, setDone] = useState(false);
+  const [alertText, setAlertText] = useState<string | null>(null);
 
-  const startRef = useRef(Date.now());
-  const durRef = useRef(config?.stages[0]?.duration ?? 0);
-  const idxRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startRef  = useRef(Date.now());
+  const durRef    = useRef(config?.stages[0]?.duration ?? 0);
+  const idxRef    = useRef(0);
+  const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const alertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showAlert = useCallback((text: string) => {
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+    setAlertText(text);
+    alertTimerRef.current = setTimeout(() => setAlertText(null), 2000);
+  }, []);
 
   const finish = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    releaseWakeLock();
     playAlarm();
     setDone(true);
   }, []);
 
   const advanceTo = useCallback((next: number, stages: Stage[]) => {
     if (next >= stages.length) { finish(); return; }
+
+    // Show alert for the stage that just ended
+    const endedType = stages[idxRef.current]?.type;
+    if (endedType && STAGE_ALERTS[endedType]) {
+      showAlert(STAGE_ALERTS[endedType]!);
+    }
+
     idxRef.current = next;
     startRef.current = Date.now();
     durRef.current = stages[next].duration;
     setStageIdx(next);
     setRemaining(stages[next].duration);
     playAlarm();
-  }, [finish]);
+  }, [finish, showAlert]);
 
   const tick = useCallback((stages: Stage[]) => {
     const elapsed = (Date.now() - startRef.current) / 1000;
@@ -49,14 +73,31 @@ export function Timer() {
   useEffect(() => {
     if (!config) { nav('/'); return; }
     const { stages } = config;
+
+    acquireWakeLock();
     timerRef.current = setInterval(() => tick(stages), 300);
-    const onVisible = () => { if (document.visibilityState === 'visible') tick(stages); };
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        acquireWakeLock();   // re-acquire after tab switch (iOS releases it)
+        tick(stages);
+      }
+    };
     document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
       document.removeEventListener('visibilitychange', onVisible);
+      releaseWakeLock();
     };
   }, []);
+
+  function exitTimer() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    releaseWakeLock();
+    nav('/');
+  }
 
   if (!config) return null;
 
@@ -80,12 +121,7 @@ export function Timer() {
 
   return (
     <div style={s.page}>
-      <button
-        className="glass-pill"
-        style={s.exitBtn}
-        onClick={() => { if (timerRef.current) clearInterval(timerRef.current); nav('/'); }}
-        aria-label="退出"
-      >
+      <button className="glass-pill" style={s.exitBtn} onClick={exitTimer} aria-label="退出">
         ✕
       </button>
 
@@ -115,10 +151,7 @@ export function Timer() {
           <div key={i} style={{
             width: 6, height: 6, borderRadius: 3,
             background: i < stageIdx
-              ? 'rgba(255, 149, 0, 0.5)'
-              : i === stageIdx
-                ? '#FF9500'
-                : 'rgba(235, 235, 245, 0.2)',
+              ? 'rgba(255,149,0,0.5)' : i === stageIdx ? '#FF9500' : 'rgba(235,235,245,0.2)',
             transition: 'background 400ms',
           }} />
         ))}
@@ -132,6 +165,13 @@ export function Timer() {
       </button>
 
       <div style={{ height: 'calc(env(safe-area-inset-bottom) + 28px)' }} />
+
+      {/* Stage transition alert overlay */}
+      {alertText && (
+        <div style={s.alertOverlay}>
+          <span style={s.alertText}>{alertText}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -142,39 +182,31 @@ function fmtTime(sec: number) {
 
 const s: Record<string, React.CSSProperties> = {
   page: {
-    height: '100dvh',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '0 24px',
     paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
-    position: 'relative',
-    overflow: 'hidden',
+    position: 'relative', overflow: 'hidden',
   },
   exitBtn: {
-    position: 'absolute',
-    top: 'calc(env(safe-area-inset-top) + 18px)',
-    right: 20,
-    width: 34, height: 34,
-    border: 'none',
-    color: 'rgba(235, 235, 245, 0.7)',
-    fontSize: 13, fontWeight: 400,
+    position: 'absolute', top: 'calc(env(safe-area-inset-top) + 18px)', right: 20,
+    width: 34, height: 34, border: 'none',
+    color: 'rgba(235,235,245,0.7)', fontSize: 13,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   stageInfo: { textAlign: 'center' },
   stageIcon: { fontSize: 32, lineHeight: 1 },
   stageName: { fontSize: 32, fontWeight: 600, color: '#fff', margin: '10px 0 6px', letterSpacing: -0.6 },
-  nextLabel: { color: 'rgba(235, 235, 245, 0.5)', fontSize: 14, margin: 0, fontWeight: 400 },
+  nextLabel: { color: 'rgba(235,235,245,0.5)', fontSize: 14, margin: 0 },
   ringWrap: { display: 'flex', justifyContent: 'center' },
   timeText: {
     fontSize: 60, fontWeight: 300, color: '#fff',
     fontVariantNumeric: 'tabular-nums', letterSpacing: -2, lineHeight: 1,
   },
-  remainLabel: { fontSize: 13, color: 'rgba(235, 235, 245, 0.45)', marginTop: 6, fontWeight: 400 },
+  remainLabel: { fontSize: 13, color: 'rgba(235,235,245,0.45)', marginTop: 6 },
   dotsPill: { display: 'flex', gap: 7, alignItems: 'center', padding: '8px 14px' },
   skipBtn: {
-    width: 'auto', minWidth: 160,
-    padding: '12px 28px', border: 'none',
-    color: 'rgba(235, 235, 245, 0.7)',
-    fontSize: 14, fontWeight: 500,
+    width: 'auto', minWidth: 160, padding: '12px 28px', border: 'none',
+    color: 'rgba(235,235,245,0.7)', fontSize: 14, fontWeight: 500,
   },
   donePage: {
     height: '100dvh', display: 'flex', flexDirection: 'column',
@@ -188,5 +220,19 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center', gap: 4, flex: 1, justifyContent: 'center',
   },
   doneTitle: { fontSize: 32, fontWeight: 600, color: '#fff', margin: '8px 0 4px', letterSpacing: -0.6 },
-  doneSub: { fontSize: 15, color: 'rgba(235, 235, 245, 0.5)', margin: '4px 0 0' },
+  doneSub: { fontSize: 15, color: 'rgba(235,235,245,0.5)', margin: '4px 0 0' },
+  alertOverlay: {
+    position: 'absolute', inset: 0,
+    background: 'rgba(0,0,0,0.72)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    animation: 'alertFadeIn 200ms ease',
+    zIndex: 10,
+  },
+  alertText: {
+    fontSize: 44, fontWeight: 700, color: '#fff',
+    letterSpacing: -0.8, textAlign: 'center',
+    lineHeight: 1.2,
+  },
 };
