@@ -44,6 +44,17 @@ export function applyCustomDurations(
   );
 }
 
+export function resetStageDuration(
+  cutId: string, thickness: number, doneness: Doneness, type: Stage['type'],
+) {
+  const store = load();
+  const k = slotKey(thickness, doneness);
+  if (store[cutId]?.[k]) {
+    delete store[cutId][k][type];
+    save(store);
+  }
+}
+
 export function saveStageDuration(
   cutId: string, thickness: number, doneness: Doneness,
   type: Stage['type'], duration: number,

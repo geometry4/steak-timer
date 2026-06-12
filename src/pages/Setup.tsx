@@ -2,7 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
-import { applyCustomDurations, saveStageDuration } from '../utils/storage';
+import { applyCustomDurations, saveStageDuration, resetStageDuration } from '../utils/storage';
 import type { Stage, CookingConfig, Doneness } from '../types';
 import { DONENESS_LABELS, DONENESS_MULT } from '../types';
 
@@ -105,6 +105,24 @@ export function Setup() {
       i === editIdx ? { ...st, duration: newDur } : st
     ));
     saveStageDuration(cut!.id, cut!.presets[presetIdx].thickness, doneness, editedType, newDur);
+    setEditIdx(null);
+  }
+
+  function resetEdit() {
+    if (editIdx === null) return;
+    const editedType = stages[editIdx].type;
+    // Compute the un-customised default duration for this stage
+    const baseStages = applyDoneness(
+      JSON.parse(JSON.stringify(cut!.presets[presetIdx].stages)) as Stage[],
+      DONENESS_MULT[doneness],
+    );
+    const defaultDur = baseStages.find(s => s.type === editedType)?.duration ?? 0;
+    setPicMin(Math.floor(defaultDur / 60));
+    setPicSec(defaultDur % 60);
+    resetStageDuration(cut!.id, cut!.presets[presetIdx].thickness, doneness, editedType);
+    setStages(prev => prev.map((st, i) =>
+      i === editIdx ? { ...st, duration: defaultDur } : st
+    ));
     setEditIdx(null);
   }
 
@@ -222,7 +240,10 @@ export function Setup() {
       {editIdx !== null && (
         <div className="sheet-backdrop" onClick={() => setEditIdx(null)}>
           <div className="glass sheet" onClick={e => e.stopPropagation()}>
-            <p style={s.sheetTitle}>{stages[editIdx].label}</p>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+              <p style={{ ...s.sheetTitle, margin: 0, flex: 1 }}>{stages[editIdx].label}</p>
+              <button style={s.resetBtn} onClick={resetEdit}>恢复默认</button>
+            </div>
             <div style={s.steppers}>
               <Stepper label="分" value={picMin} min={0} max={30} onChange={setPicMin} />
               <Stepper label="秒" value={picSec} min={0} max={55} step={5} onChange={setPicSec} wrap />
@@ -309,5 +330,10 @@ const s: Record<string, React.CSSProperties> = {
   cancelBtn: {
     flex: 1, height: 48, borderRadius: 14, border: 'none',
     background: 'rgba(255,255,255,0.10)', color: '#fff', fontSize: 16, fontWeight: 500,
+  },
+  resetBtn: {
+    background: 'none', border: 'none',
+    color: 'rgba(255,149,0,0.8)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+    padding: '4px 0',
   },
 };

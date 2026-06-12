@@ -3,7 +3,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCut } from '../data/presets';
 import { initAudio } from '../utils/audio';
-import { applyCustomDurations, saveStageDuration } from '../utils/storage';
+import { applyCustomDurations, saveStageDuration, resetStageDuration } from '../utils/storage';
 import { DONENESS_LABELS, DONENESS_MULT } from '../types';
 const ICONS = {
     cook: '🔥', flip: '↔️', baste: '🧈', rest: '⏱️',
@@ -90,6 +90,19 @@ export function Setup() {
         saveStageDuration(cut.id, cut.presets[presetIdx].thickness, doneness, editedType, newDur);
         setEditIdx(null);
     }
+    function resetEdit() {
+        if (editIdx === null)
+            return;
+        const editedType = stages[editIdx].type;
+        // Compute the un-customised default duration for this stage
+        const baseStages = applyDoneness(JSON.parse(JSON.stringify(cut.presets[presetIdx].stages)), DONENESS_MULT[doneness]);
+        const defaultDur = baseStages.find(s => s.type === editedType)?.duration ?? 0;
+        setPicMin(Math.floor(defaultDur / 60));
+        setPicSec(defaultDur % 60);
+        resetStageDuration(cut.id, cut.presets[presetIdx].thickness, doneness, editedType);
+        setStages(prev => prev.map((st, i) => i === editIdx ? { ...st, duration: defaultDur } : st));
+        setEditIdx(null);
+    }
     function start() {
         initAudio();
         const active = useBaste ? stages : stages.filter(st => st.type !== 'baste');
@@ -111,7 +124,7 @@ export function Setup() {
                                     }, onClick: () => selectDoneness(d), children: [_jsx("span", { style: s.donenessName, children: DONENESS_LABELS[d] }), _jsx("span", { style: {
                                                 ...s.donenessTemp,
                                                 color: d === doneness ? 'rgba(255,149,0,0.9)' : 'rgba(235,235,245,0.35)',
-                                            }, children: DONENESS_TEMP[d] })] }, d))) })] }), _jsx("section", { children: _jsxs("div", { className: "glass", style: s.row, children: [_jsxs("div", { style: { flex: 1 }, children: [_jsx("div", { style: s.rowTitle, children: "\u9EC4\u6CB9 Baste" }), _jsx("div", { style: s.rowSub, children: "\u9EC4\u6CB9 \u00B7 \u5927\u849C \u00B7 \u9999\u8349" })] }), _jsx("button", { className: `toggle ${useBaste ? 'on' : 'off'}`, onClick: () => setUseBaste(v => !v), "aria-label": "butter baste" })] }) }), _jsxs("section", { children: [_jsx("p", { className: "sec-label", children: "\u9636\u6BB5\u65F6\u95F4 \u00B7 \u70B9\u51FB\u53EF\u4FEE\u6539" }), _jsx("div", { className: "glass", style: s.stageList, children: visible.map((stage, i) => (_jsxs("div", { children: [_jsxs("button", { style: s.stageRow, onClick: () => openEdit(stages.indexOf(stage)), children: [_jsx("span", { style: { fontSize: 18, width: 26 }, children: ICONS[stage.type] }), _jsx("span", { style: s.stageName, children: stage.label }), _jsx("span", { style: s.durationChip, children: fmt(stage.duration) })] }), i < visible.length - 1 && _jsx("div", { className: "divider" })] }, stage.id))) })] }), _jsx("div", { style: { flex: 1 } })] }), _jsx("div", { style: s.footer, children: _jsx("button", { className: "btn-primary", onClick: start, children: "\u5F00\u59CB\u8BA1\u65F6" }) }), editIdx !== null && (_jsx("div", { className: "sheet-backdrop", onClick: () => setEditIdx(null), children: _jsxs("div", { className: "glass sheet", onClick: e => e.stopPropagation(), children: [_jsx("p", { style: s.sheetTitle, children: stages[editIdx].label }), _jsxs("div", { style: s.steppers, children: [_jsx(Stepper, { label: "\u5206", value: picMin, min: 0, max: 30, onChange: setPicMin }), _jsx(Stepper, { label: "\u79D2", value: picSec, min: 0, max: 55, step: 5, onChange: setPicSec, wrap: true })] }), _jsxs("div", { style: s.sheetBtns, children: [_jsx("button", { style: s.cancelBtn, onClick: () => setEditIdx(null), children: "\u53D6\u6D88" }), _jsx("button", { className: "btn-primary", style: { flex: 1, height: 48 }, onClick: confirmEdit, children: "\u786E\u5B9A" })] })] }) }))] }));
+                                            }, children: DONENESS_TEMP[d] })] }, d))) })] }), _jsx("section", { children: _jsxs("div", { className: "glass", style: s.row, children: [_jsxs("div", { style: { flex: 1 }, children: [_jsx("div", { style: s.rowTitle, children: "\u9EC4\u6CB9 Baste" }), _jsx("div", { style: s.rowSub, children: "\u9EC4\u6CB9 \u00B7 \u5927\u849C \u00B7 \u9999\u8349" })] }), _jsx("button", { className: `toggle ${useBaste ? 'on' : 'off'}`, onClick: () => setUseBaste(v => !v), "aria-label": "butter baste" })] }) }), _jsxs("section", { children: [_jsx("p", { className: "sec-label", children: "\u9636\u6BB5\u65F6\u95F4 \u00B7 \u70B9\u51FB\u53EF\u4FEE\u6539" }), _jsx("div", { className: "glass", style: s.stageList, children: visible.map((stage, i) => (_jsxs("div", { children: [_jsxs("button", { style: s.stageRow, onClick: () => openEdit(stages.indexOf(stage)), children: [_jsx("span", { style: { fontSize: 18, width: 26 }, children: ICONS[stage.type] }), _jsx("span", { style: s.stageName, children: stage.label }), _jsx("span", { style: s.durationChip, children: fmt(stage.duration) })] }), i < visible.length - 1 && _jsx("div", { className: "divider" })] }, stage.id))) })] }), _jsx("div", { style: { flex: 1 } })] }), _jsx("div", { style: s.footer, children: _jsx("button", { className: "btn-primary", onClick: start, children: "\u5F00\u59CB\u8BA1\u65F6" }) }), editIdx !== null && (_jsx("div", { className: "sheet-backdrop", onClick: () => setEditIdx(null), children: _jsxs("div", { className: "glass sheet", onClick: e => e.stopPropagation(), children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', marginBottom: 20 }, children: [_jsx("p", { style: { ...s.sheetTitle, margin: 0, flex: 1 }, children: stages[editIdx].label }), _jsx("button", { style: s.resetBtn, onClick: resetEdit, children: "\u6062\u590D\u9ED8\u8BA4" })] }), _jsxs("div", { style: s.steppers, children: [_jsx(Stepper, { label: "\u5206", value: picMin, min: 0, max: 30, onChange: setPicMin }), _jsx(Stepper, { label: "\u79D2", value: picSec, min: 0, max: 55, step: 5, onChange: setPicSec, wrap: true })] }), _jsxs("div", { style: s.sheetBtns, children: [_jsx("button", { style: s.cancelBtn, onClick: () => setEditIdx(null), children: "\u53D6\u6D88" }), _jsx("button", { className: "btn-primary", style: { flex: 1, height: 48 }, onClick: confirmEdit, children: "\u786E\u5B9A" })] })] }) }))] }));
 }
 function Stepper({ label, value, min, max, step = 1, onChange, wrap = false }) {
     const next = value + step > max ? (wrap ? min : max) : value + step;
@@ -173,5 +186,10 @@ const s = {
     cancelBtn: {
         flex: 1, height: 48, borderRadius: 14, border: 'none',
         background: 'rgba(255,255,255,0.10)', color: '#fff', fontSize: 16, fontWeight: 500,
+    },
+    resetBtn: {
+        background: 'none', border: 'none',
+        color: 'rgba(255,149,0,0.8)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+        padding: '4px 0',
     },
 };
